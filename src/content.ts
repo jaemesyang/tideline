@@ -1,7 +1,3 @@
-// PLACEHOLDER CONTENT — every entry below is invented. Replace with real
-// projects before launch. Written in the site's register so the voice is
-// audible: plain, active, specific, no selling.
-
 export type ObjectKey =
   | 'driftwood'
   | 'bottle'
@@ -27,98 +23,76 @@ export type Specimen = {
 
 export const specimens: Specimen[] = [
   {
-    id: 'saltmarsh',
-    title: 'Saltmarsh',
-    kind: 'project',
-    object: 'driftwood',
-    year: '2024',
-    summary: 'Live hydrology map for a county flood office.',
-    detail:
-      'Sensor data lands, gets cleaned, and renders in under a second. Built the ingest pipeline and the map client. Ran unattended for two years; the office noticed it twice, both times because a river actually flooded.',
-    links: [{ label: 'case study', url: 'https://example.com/saltmarsh' }],
-  },
-  {
-    id: 'ledger',
-    title: 'Ledger',
-    kind: 'project',
-    object: 'crate',
-    year: '2023',
-    summary: 'Double-entry bookkeeping engine for a payments startup.',
-    detail:
-      'Every cent traceable to a transaction pair. Wrote the core, the migration off the old system, and the reconciliation reports. Zero balance drift since cutover.',
-    links: [{ label: 'writeup', url: 'https://example.com/ledger' }],
-  },
-  {
-    id: 'gullwing',
-    title: 'Gullwing',
-    kind: 'project',
-    object: 'buoy',
-    year: '2023',
-    summary: 'Flight-search interface that answers in one screen.',
-    detail:
-      'No pagination, no spinner theater. Results stream in ranked and settle in place. Prototype convinced the client to rebuild their search stack around it.',
-  },
-  {
-    id: 'drift',
-    title: 'Drift',
-    kind: 'project',
-    object: 'glassFloat',
-    year: '2022',
-    summary: 'Ocean-current visualization from public NOAA data.',
-    detail:
-      'A year of surface currents, one canvas, sixty frames a second. Personal project that got picked up by two oceanography courses as teaching material.',
-    links: [{ label: 'live', url: 'https://example.com/drift' }],
-  },
-  {
-    id: 'quayside',
-    title: 'Quayside',
-    kind: 'project',
-    object: 'rope',
-    year: '2022',
-    summary: 'Design system for a port logistics company.',
-    detail:
-      'Forty screens of legacy software brought under one component library. Shipped with usage docs the internal team still maintains without me. That was the goal.',
-  },
-  {
-    id: 'foghorn',
-    title: 'Foghorn',
-    kind: 'project',
-    object: 'canister',
-    year: '2021',
-    summary: 'Alerting service that pages people less.',
-    detail:
-      'Deduplicates, groups, and holds non-urgent alerts until morning. On-call pages dropped by two thirds in the first month. The pager going quiet is the whole feature.',
-  },
-  {
-    id: 'wrack-notes',
-    title: 'Field notes on generative color',
-    kind: 'writing',
-    object: 'bottle',
-    year: '2024',
-    summary: 'Why seeded palettes beat random ones.',
-    detail:
-      'Wide-open random color is what makes generative work look cheap. The essay walks through constraint systems that keep variation alive without losing authorship.',
-    links: [{ label: 'read', url: 'https://example.com/color' }],
-  },
-  {
-    id: 'slack-tide',
-    title: 'Slack tide',
-    kind: 'writing',
-    object: 'kelp',
-    year: '2023',
-    summary: 'On tools that work best when idle.',
-    detail:
-      'Most software is judged while being used. Some of the best software is judged by how little it needs to be. Short essay on designing for absence.',
-  },
-  {
     id: 'about',
-    title: 'Observer',
+    title: 'About',
     kind: 'about',
     object: 'shell',
     year: '—',
-    summary: 'Design engineer. Interfaces, data, the seam between.',
+    summary: 'Sophomore at Lakeside School in Seattle.',
+    detail: "Still figuring out what I'm going to be good at. These are the attempts.",
+  },
+  {
+    id: 'scrapped',
+    title: 'Scrapped: Bin Sorter',
+    kind: 'project',
+    object: 'canister',
+    year: '2026',
+    summary: 'Point your camera at something and it tells you which bin.',
     detail:
-      'Ten years building interfaces that carry real data. Comfortable from shader to schema. Works alone or embedded in a team; ships either way.',
+      'Trained an image classifier to sort items into compost, recycling, or landfill, running on-device so it works without signal. Built with TODO_STACK. Shipped to the App Store. On real photos it gets the bin right about 62% of the time, better than the 33% you would get guessing between three bins, and not good enough to trust. It fails on anything unusual, and a wrong call contaminates the bin it goes into, so being confidently wrong is worse than being unsure.',
+    links: [{ label: 'App Store', url: 'TODO_APPSTORE_URL' }],
+  },
+  {
+    id: 'security',
+    title: 'Systems security research',
+    kind: 'project',
+    object: 'crate',
+    year: '2026',
+    summary: 'Breaking a web app, then fixing it.',
+    detail:
+      'Working remotely under a professor at UNC Charlotte on a vulnerable Java web app running in a VM. I ran real SQL injection attacks against it, including login bypass, injected accounts, and dropped tables, then mapped the control flow and data flow to show how each one reached the database. The root cause was user input concatenated straight into a Statement instead of a PreparedStatement. One path turned out not to be injectable at all, and working out why taught me more than the attacks did. Now rewriting it so the attacks stop working.',
+  },
+  {
+    id: 'worldcup',
+    title: 'World Cup 2026 prediction model',
+    kind: 'project',
+    object: 'glassFloat',
+    year: '2026',
+    summary: 'Predicted all 103 matches before the tournament started.',
+    detail:
+      'Elo ratings feeding a Poisson goal model, run through Monte Carlo simulation for the group and knockout stages. Built with TODO_STACK. Committed and timestamped the probabilities on June 9, before a ball was kicked, so the score is honest. Final Brier was 0.534 across all 103 matches, where lower is better and a coin flip scores 0.667. It underweighted draws badly, worst call being Spain and Cabo Verde 0-0 at 1.44. And with no player-level data it overrated the South American sides; Brazil losing to Norway was the single worst prediction at 1.384.',
+    links: [{ label: 'github', url: 'https://github.com/jaemesyang/wc2026model' }],
+  },
+  {
+    id: 'orbit',
+    title: 'Orbital mechanics simulator',
+    kind: 'project',
+    object: 'driftwood',
+    year: '2026',
+    summary: 'A star and three planets, simulated from scratch.',
+    detail:
+      'Newtonian gravity in Python, no libraries doing the physics for me. Uses Velocity Verlet integration, which conserves energy over long runs where the obvious approach drifts and the orbits spiral apart. Wrote every line myself, no AI-generated code, on purpose, because the point was learning it. The star does not move yet, and there is no way to change anything without editing the source.',
+    links: [{ label: 'github', url: 'https://github.com/jaemesyang/orbit-sim' }],
+  },
+  {
+    id: 'problems',
+    title: 'Competition problem writing',
+    kind: 'project',
+    object: 'bottle',
+    year: '2023–present',
+    summary: 'Problems for Mustang Math, WAMO, InteGIRLS, and others.',
+    detail:
+      'Written TODO_COUNT problems across four national organizations, reaching over 10,000 students. Regional lead for Mustang Math, coordinating 50+ Washington volunteers. A problem has to be hard and it has to teach something, and those two things fight each other. A problem can be brutal and leave a student with nothing. Getting both at once is the part that takes work.',
+  },
+  {
+    id: 'competitions',
+    title: 'Competitions',
+    kind: 'writing',
+    object: 'rope',
+    year: '2022–present',
+    summary: 'AIME 4× · USACO Silver · ACSL perfect score · 3rd at National Science Bowl.',
+    detail:
+      'Also the MIT Science Bowl Invitational and the Pacific Northwest Regional. These measure how fast I solve problems someone else already wrote, which is a narrower thing than it looks like from the outside. I keep doing them for the people.',
   },
   {
     id: 'contact',
@@ -126,11 +100,11 @@ export const specimens: Specimen[] = [
     kind: 'contact',
     object: 'net',
     year: '—',
-    summary: 'Reachable. Replies within a day.',
-    detail: 'Email is fastest. Open to staff engineering and design engineering roles, contract or full time.',
+    summary: 'Reachable by email.',
+    detail: 'Best way to reach me is email. GitHub has most of the code.',
     links: [
-      { label: 'email', url: 'mailto:placeholder@example.com' },
-      { label: 'github', url: 'https://github.com/placeholder' },
+      { label: 'email', url: 'mailto:james.yang142@gmail.com' },
+      { label: 'github', url: 'https://github.com/jaemesyang' },
     ],
   },
 ]

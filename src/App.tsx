@@ -1,6 +1,7 @@
 import { useSeed } from './seed/useSeed'
 import { SeedDebug } from './seed/SeedDebug'
 import { Scene } from './scene/Scene'
+import { SkipLink } from './ui/SkipLink'
 
 function App() {
   const seed = useSeed((s) => s.seed)
@@ -13,6 +14,7 @@ function App() {
   return (
     <>
       <Scene />
+      <SkipLink />
       <span
         style={{
           position: 'fixed',
