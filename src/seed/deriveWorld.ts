@@ -8,7 +8,7 @@
 //   3. palette perturbation (hue, lightness)
 //   4. water: 2 gerstner octaves, foam density, swash fronts
 //   5. sand: tone, wet line, grain, small debris
-//   6. wrack line: count, specimen shuffle, per-object placement
+//   6. wrack line: count, project/writing shuffle (about first, contact last), per-object placement
 //   7. audio: swell period, filter, gull/buoy chance
 
 import { mulberry32, hashSeed } from './mulberry32'
@@ -131,14 +131,18 @@ export function deriveWorld(seed: string): World {
     })
   }
 
-  // 6. wrack line — Fisher-Yates over all specimens, take N, place along strand
+  // 6. wrack line — about pinned first, contact pinned last, always present.
+  // Only projects/writing shuffle (Fisher-Yates) and fill the middle slots.
   const wrackCount = int(6, 9)
-  const order = specimens.slice()
-  for (let i = order.length - 1; i > 0; i--) {
+  const about = specimens.find((s) => s.kind === 'about')
+  const contact = specimens.find((s) => s.kind === 'contact')
+  const pool = specimens.filter((s) => s.kind !== 'about' && s.kind !== 'contact')
+  for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
-    ;[order[i], order[j]] = [order[j], order[i]]
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
   }
-  const chosen = order.slice(0, Math.min(wrackCount, order.length))
+  const middle = pool.slice(0, Math.min(wrackCount - 2, pool.length))
+  const chosen = [about, ...middle, contact].filter((s): s is Specimen => s !== undefined)
   const wrack: WrackItem[] = chosen.map((specimen, i) => ({
     specimen,
     catalogueNo: `TL-${String(i + 1).padStart(2, '0')}`,

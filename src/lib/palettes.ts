@@ -99,21 +99,45 @@ export function perturbPalette(p: Palette, hueShift: number, lightShift: number)
   return out
 }
 
-/** Fixed color deltas per weather. Ink untouched. Wind changes motion, not color. */
+/** Linear RGB-space blend of two hex colors. */
+export function mixHex(a: string, b: string, t: number): string {
+  const na = parseInt(a.slice(1), 16)
+  const nb = parseInt(b.slice(1), 16)
+  const ch = (sh: number) => {
+    const va = (na >> sh) & 255
+    const vb = (nb >> sh) & 255
+    return Math.round(va + (vb - va) * t)
+      .toString(16)
+      .padStart(2, '0')
+  }
+  return `#${ch(16)}${ch(8)}${ch(0)}`
+}
+
+/** Fixed color deltas per weather. Ink untouched. */
 export function applyWeather(p: Palette, weather: Weather): Palette {
-  if (weather === 'clear' || weather === 'wind') return { ...p }
+  if (weather === 'clear') return { ...p }
   const out = { ...p }
-  for (const role of ['sky', 'water', 'sand', 'foam'] as PaletteRole[]) {
+  const adjust = (role: PaletteRole, ds: number, dl: number) => {
     const c = hexToHsl(p[role])
-    if (weather === 'haze') {
-      // lift black point ~8%, compress contrast, mild desaturation
-      out[role] = hslToHex({ h: c.h, s: c.s * 0.85, l: 0.08 + c.l * 0.86 })
-    } else {
-      // rain: desaturate, darken the water
-      const desat = role === 'sand' ? 0.8 : 0.9
-      const dl = role === 'water' ? -0.06 : 0
-      out[role] = hslToHex({ h: c.h, s: c.s * desat, l: c.l + dl })
+    out[role] = hslToHex({ h: c.h, s: c.s * ds, l: c.l + dl })
+  }
+  if (weather === 'haze') {
+    // hard black-point lift + contrast compression, then bleed sky into water
+    for (const role of ['sky', 'water', 'sand', 'foam'] as PaletteRole[]) {
+      const c = hexToHsl(p[role])
+      out[role] = hslToHex({ h: c.h, s: c.s * 0.8, l: 0.1 + c.l * 0.84 })
     }
+    out.water = mixHex(out.water, out.sky, 0.25)
+  } else if (weather === 'rain') {
+    adjust('sky', 0.9, 0)
+    adjust('water', 0.9, -0.06)
+    adjust('sand', 0.8, 0)
+    adjust('foam', 0.9, 0)
+  } else {
+    // wind: churned water and foam read lighter and greyer
+    adjust('sky', 0.95, 0)
+    adjust('water', 0.92, 0.03)
+    adjust('foam', 1, 0.04)
   }
   return out
 }
