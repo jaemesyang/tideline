@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Vector3, Vector4, type ShaderMaterial } from 'three'
 import { useSeed } from '../seed/useSeed'
+import { shoreZ, SHORE_IN } from '../lib/scroll'
 import vert from '../shaders/water.vert'
 import frag from '../shaders/water.frag'
 
@@ -35,7 +36,7 @@ export function Water() {
       uOctave1: { value: octave(o1) },
       uOctave2: { value: octave(o2) },
       uOmega: { value: [(2 * Math.PI) / o1.period, (2 * Math.PI) / o2.period] },
-      uShoreZ: { value: 0 },
+      uShoreZ: { value: SHORE_IN },
       uWaterColor: { value: srgb(world.palette.water) },
       uSkyColor: { value: srgb(world.palette.sky) },
       uSandColor: { value: srgb(world.palette.sand) },
@@ -51,7 +52,9 @@ export function Water() {
   }, [world])
 
   useFrame((state) => {
-    if (mat.current) mat.current.uniforms.uTime.value = state.clock.elapsedTime
+    if (!mat.current) return
+    mat.current.uniforms.uTime.value = state.clock.elapsedTime
+    mat.current.uniforms.uShoreZ.value = shoreZ()
   })
 
   return (
