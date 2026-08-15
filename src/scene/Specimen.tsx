@@ -1,62 +1,217 @@
-import { useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
-import type { Group } from 'three'
+import { useEffect, useMemo, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { Color, Vector3, type Group, type Mesh, type MeshLambertMaterial } from 'three'
 import { useSeed } from '../seed/useSeed'
-import { shoreZ } from '../lib/scroll'
+import { shoreZ, tide } from '../lib/scroll'
+import { staticMode } from '../lib/motion'
+import { OBJECT_BUILDERS, OBJECT_ANCHOR_Y } from './objects'
+import { labelSlots, introEl, layerEl } from '../ui/labelBridge'
 
-// Phase 3 placeholders: one flat ink box per wrack item, rising out of the
-// sand as the waterline retreats past it. Real objects + labels are Phase 4.
+// Wrack objects + the label projector. One frame loop does everything:
+// emergence (rise out of the sand as the waterline retreats past), wet-object
+// tone fading dry, and projecting each object's anchor to screen space to
+// place its DOM label card, resolve card overlaps, and draw leader lines.
 // Positions use only values already drawn by deriveWorld — adding rng draws
 // here would silently re-roll every existing tide.
 
 const PLANE_Z = 8 // water plane's world-z offset; wrack z is authored in shader space
-const BOX = 1.3
-const SUBMERGED_Y = -1.1
+const SUBMERGED_Y = -2.4 // below the deepest wave trough, tallest object included
+const BURY = 0.42 // world units at buriedDepth = 1
 
 // Exposure order is wrack order: first item highest on the beach (uncovered
 // first), last item nearest the water's resting edge.
 const Z_FIRST = 18
 const Z_LAST = -16
 
+const OBJECT_SCALE = 1.35 // objects are the hooks — they need to read from across the beach
+
+const WET_TONE = 0.72 // brightness of a just-exposed object
+const DRY_SECONDS = 7
+
 function wrackZ(i: number, n: number): number {
   return n > 1 ? Z_FIRST + ((Z_LAST - Z_FIRST) * i) / (n - 1) : Z_FIRST
 }
 
-function restY(buriedDepth: number): number {
-  return BOX / 2 - buriedDepth * 0.55
+type TonedMat = { mat: MeshLambertMaterial; base: Color }
+type Placed = { left: number; top: number; right: number; bottom: number }
+
+const proj = new Vector3()
+
+function overlaps(a: Placed, b: Placed): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
 }
 
 export function Wrack() {
   const wrack = useSeed((s) => s.world.wrack)
-  const ink = useSeed((s) => s.world.palette.ink)
-  const group = useRef<Group>(null)
+  const camera = useThree((s) => s.camera)
+  const size = useThree((s) => s.size)
+  const groups = useRef<(Group | null)[]>([])
+  const mats = useRef<TonedMat[][]>([])
+  const settledAt = useRef<number[]>([])
 
-  useFrame(() => {
-    const g = group.current
-    if (!g) return
+  // new tide: reset per-item animation state
+  useEffect(() => {
+    mats.current = []
+    settledAt.current = []
+  }, [wrack])
+
+  useFrame((state) => {
     const shore = shoreZ()
-    for (let i = 0; i < g.children.length; i++) {
+    const now = state.clock.elapsedTime
+    const { width, height } = size
+    const n = wrack.length
+
+    // pass 1: emergence + wetness + desired label rects
+    const visible: {
+      slot: NonNullable<ReturnType<typeof labelSlots.get>>
+      rect: Placed
+      sx: number
+      sy: number
+      e: number
+    }[] = []
+
+    for (let i = 0; i < n; i++) {
+      const g = groups.current[i]
       const item = wrack[i]
-      if (!item) continue
-      const z = wrackZ(i, wrack.length)
+      if (!g || !item) continue
+      const z = wrackZ(i, n)
       // starts rising as the waterline reaches it, settled ~3 units later
       const t = Math.min(Math.max((z + 1 - shore) / 3, 0), 1)
       const e = t * t * (3 - 2 * t)
-      g.children[i].position.y = SUBMERGED_Y + (restY(item.buriedDepth) - SUBMERGED_Y) * e
+      const restY = -item.buriedDepth * BURY
+      g.position.y = SUBMERGED_Y + (restY - SUBMERGED_Y) * e
+
+      // wetness: just-exposed objects sit dark, dry out over a few seconds.
+      // The static composition is a dry beach — no animation to carry the wet.
+      if (t >= 1 && !(settledAt.current[i] >= 0)) settledAt.current[i] = now
+      if (t < 1) settledAt.current[i] = -1
+      const since = settledAt.current[i] >= 0 ? now - settledAt.current[i] : 0
+      const tone = staticMode
+        ? 1
+        : t < 1
+          ? WET_TONE
+          : WET_TONE + (1 - WET_TONE) * Math.min(since / DRY_SECONDS, 1)
+      let cache = mats.current[i]
+      if (!cache) {
+        cache = []
+        g.traverse((o) => {
+          const m = (o as Mesh).material as MeshLambertMaterial | undefined
+          if (m && m.color) cache.push({ mat: m, base: m.color.clone() })
+        })
+        mats.current[i] = cache
+      }
+      for (const { mat, base } of cache) {
+        mat.color.copy(base).multiplyScalar(tone)
+      }
+
+      // label anchor → screen
+      const slot = labelSlots.get(item.specimen.id)
+      if (!slot || !slot.card) continue
+      if (e < 0.05) {
+        slot.card.style.visibility = 'hidden'
+        if (slot.line) slot.line.style.opacity = '0'
+        if (slot.dot) slot.dot.style.opacity = '0'
+        continue
+      }
+      proj
+        .set(
+          g.position.x,
+          g.position.y + OBJECT_ANCHOR_Y[item.specimen.object] * OBJECT_SCALE,
+          g.position.z,
+        )
+        .project(camera)
+      const sx = (proj.x * 0.5 + 0.5) * width
+      const sy = (0.5 - proj.y * 0.5) * height
+      const w = slot.w || 300
+      const h = slot.h || 96
+      // card sits beside the object; flip side when it would leave the frame
+      const left = sx + 26 + w < width - 12 ? sx + 26 : sx - 26 - w
+      const rect: Placed = { left: 0, top: 0, right: 0, bottom: 0 }
+      rect.left = Math.min(Math.max(left, 12), width - w - 12)
+      rect.top = Math.min(Math.max(sy - 18, 64), height - h - 12)
+      rect.right = rect.left + w
+      rect.bottom = rect.top + h
+      visible.push({ slot, rect, sx, sy, e })
+    }
+
+    // pass 2: resolve card overlaps — later (lower-beach) cards yield downward
+    visible.sort((a, b) => a.rect.top - b.rect.top)
+    const placed: Placed[] = []
+    for (const item of visible) {
+      const r = item.rect
+      let moved = true
+      while (moved) {
+        moved = false
+        for (const p of placed) {
+          if (overlaps(r, p)) {
+            const h = r.bottom - r.top
+            r.top = p.bottom + 10
+            r.bottom = r.top + h
+            moved = true
+          }
+        }
+      }
+      placed.push(r)
+    }
+
+    // pass 3: write to the DOM
+    for (const { slot, rect, sx, sy, e } of visible) {
+      const card = slot.card
+      if (!card) continue
+      card.style.visibility = 'visible'
+      card.style.opacity = String(e * e)
+      card.style.pointerEvents = e > 0.85 ? 'auto' : 'none'
+      card.style.transform = `translate3d(${rect.left.toFixed(1)}px, ${rect.top.toFixed(1)}px, 0)`
+      if (slot.line && slot.dot) {
+        const toRight = rect.left > sx
+        const ex = toRight ? rect.left : rect.left + (rect.right - rect.left)
+        const ey = Math.min(Math.max(sy, rect.top + 16), rect.bottom - 8)
+        slot.line.setAttribute('x1', sx.toFixed(1))
+        slot.line.setAttribute('y1', sy.toFixed(1))
+        slot.line.setAttribute('x2', ex.toFixed(1))
+        slot.line.setAttribute('y2', ey.toFixed(1))
+        slot.dot.setAttribute('cx', sx.toFixed(1))
+        slot.dot.setAttribute('cy', sy.toFixed(1))
+        slot.line.style.opacity = String(e)
+        slot.dot.style.opacity = String(e)
+      }
+    }
+
+    // the one line of type fades as the tide starts to go out
+    if (introEl.current && !staticMode) {
+      introEl.current.style.opacity = String(Math.min(Math.max(1 - tide.progress * 7, 0), 1))
+    }
+    // the whole label layer yields to the résumé block at the deepest point
+    if (layerEl.current) {
+      const fade = Math.min(Math.max(1 - tide.overshootPx / (height * 0.5), 0), 1)
+      layerEl.current.style.opacity = String(fade)
+      layerEl.current.style.pointerEvents = fade < 0.4 ? 'none' : ''
     }
   })
 
+  const builders = useMemo(
+    () => wrack.map((item) => OBJECT_BUILDERS[item.specimen.object]()),
+    [wrack],
+  )
+
+  // portrait reframe: the strandline compresses to what the viewport can see.
+  // Desktop (≥ ~1170px) keeps the full ±20 spread unchanged.
+  const xHalf = Math.min(20, size.width / (2 * 26) - 2.5)
+
   return (
-    <group ref={group}>
+    <group>
       {wrack.map((item, i) => (
-        <mesh
+        <group
           key={item.specimen.id}
-          position={[-20 + item.x * 40, SUBMERGED_Y, PLANE_Z + wrackZ(i, wrack.length)]}
+          ref={(g) => {
+            groups.current[i] = g
+          }}
+          position={[-xHalf + item.x * 2 * xHalf, SUBMERGED_Y, PLANE_Z + wrackZ(i, wrack.length)]}
           rotation-y={item.rotation}
+          scale={OBJECT_SCALE}
         >
-          <boxGeometry args={[BOX, BOX, BOX]} />
-          <meshBasicMaterial color={ink} />
-        </mesh>
+          {builders[i]}
+        </group>
       ))}
     </group>
   )

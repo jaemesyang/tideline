@@ -1,0 +1,497 @@
+/* All chrome and label styling. Register: field survey — ruled, mono
+   metadata, flat paper, no shadows, no decoration that isn't a rule. */
+
+/* --- fixed chrome ------------------------------------------------------- */
+
+.seed-tag,
+.seed-log-toggle,
+.skip-link,
+.audio-toggle {
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.seed-wrap {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  animation: chrome-in 0.6s 0.5s both;
+}
+
+.seed-tag {
+  position: relative;
+}
+
+.seed-tag .copied {
+  position: absolute;
+  left: calc(100% + 10px);
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.seed-log-toggle {
+  opacity: 0.6;
+}
+
+.seed-log-toggle:hover,
+.seed-log-toggle[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.skip-link {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
+  animation: chrome-in 0.6s 0.5s both;
+}
+
+.audio-toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 40;
+  opacity: 0.85;
+  animation: chrome-in 0.6s 0.5s both;
+}
+
+.skip-link:hover,
+.seed-tag:hover,
+.audio-toggle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- notable tides (§6b): a kept list, not a feature ------------------- */
+
+.tide-log {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  min-width: 272px;
+  white-space: nowrap;
+  padding: 6px 0;
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  border: 1px solid var(--hairline);
+  border-top: 2px solid var(--ink);
+}
+
+.tide-log-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 5px 12px;
+  background: none;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tide-log-row:hover span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tide-log-seed {
+  opacity: 0.55;
+}
+
+.tide-log-paste {
+  position: relative;
+  margin: 6px 12px 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline-faint);
+}
+
+.tide-log-paste input {
+  width: 100%;
+  padding: 3px 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink);
+}
+
+.tide-log-paste input::placeholder {
+  color: var(--ink-dim);
+  opacity: 0.6;
+}
+
+.tide-log-paste input:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+
+.tide-log-bad {
+  position: absolute;
+  right: 0;
+  top: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--ink-dim);
+}
+
+@keyframes chrome-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* the one allowed line (§1). Fades against scroll via inline style. */
+.intro-line {
+  position: fixed;
+  top: 30vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  margin: 0;
+  /* backwards, not both: after the entrance the frame loop owns opacity */
+  animation: chrome-in 1.1s 0.9s backwards;
+}
+
+/* --- field-log labels --------------------------------------------------- */
+
+.label-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.label-leaders {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.label-leaders line {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.label-leaders circle {
+  fill: none;
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--label-w);
+  pointer-events: auto;
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  color: var(--ink);
+  border: 1px solid var(--hairline);
+  border-top: 2px solid var(--ink);
+  border-radius: 1px;
+  transition:
+    width 0.18s ease,
+    opacity 0.15s linear;
+  will-change: transform;
+}
+
+.label.open {
+  width: var(--label-w-open);
+  z-index: 5; /* the read card sits over its neighbours */
+}
+
+.label-head {
+  display: block;
+  width: 100%;
+  padding: 8px 12px 9px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.label-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+  margin-bottom: 7px;
+  border-bottom: 1px solid var(--hairline-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+}
+
+.label-title {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.label-summary {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+.label-more {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--ink-dim);
+}
+
+/* grid-rows trick: animates open/closed without measuring heights */
+.label-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease;
+}
+
+.label.open .label-detail {
+  grid-template-rows: 1fr;
+}
+
+.label-detail > div {
+  overflow: hidden;
+}
+
+.label-detail p {
+  margin: 0;
+  padding: 0 12px 10px;
+  border-top: 1px solid var(--hairline-faint);
+  padding-top: 8px;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+
+.label-links {
+  margin: 0;
+  padding: 0 12px 10px;
+  list-style: none;
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+}
+
+.label-links a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+/* --- deepest point: the résumé block ------------------------------------ */
+
+.resume-block {
+  position: relative;
+  z-index: 25;
+  max-width: 700px;
+  margin: 0 auto 18vh;
+  padding: 36px 40px 44px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--hairline);
+  border-top: 2px solid var(--ink);
+}
+
+.resume-block h1 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.resume-head-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink-dim);
+}
+
+.resume-block article {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  column-gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--hairline-faint);
+}
+
+.resume-cat {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  line-height: 2;
+  color: var(--ink-dim);
+  white-space: pre-line;
+}
+
+.resume-block h2 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.resume-summary {
+  margin: 2px 0 8px;
+  font-family: var(--font-body);
+  font-size: var(--text-resume);
+  color: var(--ink-dim);
+}
+
+.resume-detail {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-resume);
+  line-height: 1.6;
+}
+
+.resume-links {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+}
+
+.resume-links a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+.resume-ashore {
+  margin: 26px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--ink-dim);
+}
+
+/* --- the one choice ------------------------------------------------------ */
+
+.end-choice {
+  position: relative;
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 28px;
+  margin: -8vh auto 22vh;
+}
+
+.end-choice button {
+  padding: 9px 18px;
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  border: 1px solid var(--hairline);
+  border-top: 2px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.end-choice button:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.end-choice button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.end-keep {
+  position: relative;
+}
+
+.end-saved {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 9px;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* --- static composition (prefers-reduced-motion) ------------------------ */
+
+.intro-static {
+  position: absolute;
+  animation: none;
+}
+
+/* --- mobile: same scene, portrait reframe, full-width labels ------------ */
+
+@media (max-width: 640px) {
+  :root {
+    --label-w: calc(100vw - 24px);
+    --label-w-open: calc(100vw - 24px);
+  }
+
+  .intro-line {
+    white-space: normal;
+    width: min(88vw, 560px);
+    font-size: clamp(19px, 5.5vw, 27px);
+  }
+
+  .resume-block {
+    margin: 0 10px 14vh;
+    padding: 24px 18px 32px;
+  }
+
+  .resume-block article {
+    grid-template-columns: 58px 1fr;
+    column-gap: 12px;
+  }
+
+  .end-choice {
+    gap: 18px;
+  }
+
+  .end-saved {
+    left: auto;
+    right: 0;
+    top: calc(100% + 8px);
+  }
+}

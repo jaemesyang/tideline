@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Vector3, Vector4, type ShaderMaterial } from 'three'
 import { useSeed } from '../seed/useSeed'
 import { shoreZ, SHORE_IN } from '../lib/scroll'
+import { staticMode, STATIC_TIME } from '../lib/motion'
 import vert from '../shaders/water.vert'
 import frag from '../shaders/water.frag'
 
@@ -32,7 +33,7 @@ export function Water() {
         : new Vector4(0, 1, 0, 0)
     })
     return {
-      uTime: { value: 0 },
+      uTime: { value: staticMode ? STATIC_TIME : 0 },
       uOctave1: { value: octave(o1) },
       uOctave2: { value: octave(o2) },
       uOmega: { value: [(2 * Math.PI) / o1.period, (2 * Math.PI) / o2.period] },
@@ -53,7 +54,7 @@ export function Water() {
 
   useFrame((state) => {
     if (!mat.current) return
-    mat.current.uniforms.uTime.value = state.clock.elapsedTime
+    if (!staticMode) mat.current.uniforms.uTime.value = state.clock.elapsedTime
     mat.current.uniforms.uShoreZ.value = shoreZ()
   })
 

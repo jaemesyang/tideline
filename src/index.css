@@ -13,6 +13,7 @@ body,
 }
 
 body {
-  font: 17px/1.5 system-ui, sans-serif;
+  font: 17px/1.5 var(--font-body, system-ui), sans-serif;
+  background: var(--sky, #e3c892);
   -webkit-font-smoothing: antialiased;
 }

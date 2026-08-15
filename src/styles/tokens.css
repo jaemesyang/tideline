@@ -1,0 +1,36 @@
+/* Static design tokens. Palette roles (--ink, --paper, …) are set on
+   document.documentElement at runtime from the derived world — see App.tsx.
+   Defaults below are the afternoon palette so nothing flashes unstyled. */
+
+:root {
+  /* type — three roles, three faces, never doubled up (§7) */
+  --font-display: 'Marcellus', 'Iowan Old Style', Georgia, serif;
+  --font-body: 'Alegreya Sans', 'Gill Sans', 'Trebuchet MS', sans-serif;
+  --font-mono: 'Fragment Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* scale */
+  --text-meta: 11.5px; /* catalogue numbers, label metadata */
+  --text-ui: 13px; /* seed tag, skip link, links */
+  --text-body: 15px; /* label summary + detail */
+  --text-resume: 16.5px; /* deepest-point résumé body */
+  --text-display: 27px;
+
+  /* palette (runtime-overridden) */
+  --sky: #e3c892;
+  --water: #2e5e66;
+  --sand: #cdaf7e;
+  --foam: #efe3c8;
+  --ink: #3b3222;
+  --paper: #e9ddbe;
+
+  /* derived */
+  --hairline: color-mix(in srgb, var(--ink) 34%, transparent);
+  --hairline-faint: color-mix(in srgb, var(--ink) 18%, transparent);
+  --ink-dim: color-mix(in srgb, var(--ink) 78%, var(--paper));
+
+  /* label geometry — measures chosen for the real content: summaries wrap to
+     ≤2 lines at --label-w; the long details (security, worldcup) set at
+     ~45ch in the expanded width */
+  --label-w: 300px;
+  --label-w-open: 384px;
+}

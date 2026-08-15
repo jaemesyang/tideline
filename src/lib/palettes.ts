@@ -2,7 +2,9 @@
 // perturbs hue by at most ±6° and lightness by at most ±4%. Weather applies
 // fixed deltas after that. Ink is never touched by weather — résumé stays legible.
 
-export type PaletteRole = 'sky' | 'water' | 'sand' | 'foam' | 'ink'
+// paper: label-card ground, hand-authored per palette for ≥7:1 contrast
+// against ink. Like ink, weather never touches it — labels stay legible.
+export type PaletteRole = 'sky' | 'water' | 'sand' | 'foam' | 'ink' | 'paper'
 export type Palette = Record<PaletteRole, string>
 
 export type TimeOfDay = 'dawn' | 'overcast' | 'afternoon' | 'dusk' | 'night'
@@ -23,6 +25,7 @@ export const PALETTES: Record<TimeOfDay, Palette> = {
     sand: '#a8988a',
     foam: '#eadfd6',
     ink: '#33383e',
+    paper: '#ece3dd',
   },
   overcast: {
     sky: '#b4bbbc',
@@ -30,6 +33,7 @@ export const PALETTES: Record<TimeOfDay, Palette> = {
     sand: '#97907f',
     foam: '#dcdad2',
     ink: '#272c2e',
+    paper: '#e3e2da',
   },
   afternoon: {
     sky: '#e3c892',
@@ -37,6 +41,7 @@ export const PALETTES: Record<TimeOfDay, Palette> = {
     sand: '#cdaf7e',
     foam: '#efe3c8',
     ink: '#3b3222',
+    paper: '#e9ddbe',
   },
   dusk: {
     sky: '#5c4a5a',
@@ -44,6 +49,7 @@ export const PALETTES: Record<TimeOfDay, Palette> = {
     sand: '#6e6058',
     foam: '#c9b8b0',
     ink: '#dcd5cd',
+    paper: '#453a4a',
   },
   night: {
     sky: '#141b24',
@@ -51,6 +57,7 @@ export const PALETTES: Record<TimeOfDay, Palette> = {
     sand: '#3e3f3a',
     foam: '#8e9ba1',
     ink: '#c7ccce',
+    paper: '#202a33',
   },
 }
 

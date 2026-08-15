@@ -4,7 +4,11 @@
 // that re-renders per frame would blow the frame budget for nothing.
 import Lenis from 'lenis'
 
-export const tide = { progress: 0 }
+export const tide = {
+  progress: 0,
+  /** px scrolled past the runway — the résumé block entering; labels yield to it */
+  overshootPx: 0,
+}
 
 // Waterline in the water plane's local frame (shader vXZ.y; world z minus the
 // plane's z offset). +24 parks the shore below the frame — beach submerged —
@@ -16,15 +20,48 @@ export function shoreZ(): number {
   return SHORE_IN + (SHORE_OUT - SHORE_IN) * tide.progress
 }
 
+// The tide completes over the 500vh runway (4 viewport-heights of scroll);
+// scroll past that is the deepest point — the résumé block — with the tide
+// held fully out.
+export const RUNWAY_VH = 500
+
+let activeLenis: Lenis | null = null
+
+/** "Let it go": ride the tide back in, then hand over (draw the new seed). */
+export function scrollTideIn(onDone: () => void) {
+  if (activeLenis) {
+    activeLenis.scrollTo(0, { duration: 3.2, onComplete: onDone, lock: true })
+  } else {
+    window.scrollTo(0, 0)
+    onDone()
+  }
+}
+
+/** Smoothly return to the top (notable-tide loads). */
+export function scrollToTop(duration = 1.2) {
+  if (activeLenis) activeLenis.scrollTo(0, { duration })
+  else window.scrollTo(0, 0)
+}
+
+/** The load-sequence nudge: the tide visibly begins to go out (§6). */
+export function nudgeTide() {
+  activeLenis?.scrollTo(0.16 * window.innerHeight, { duration: 2.6 })
+}
+
 export function initTideScroll(): () => void {
   const lenis = new Lenis({ autoRaf: true })
+  activeLenis = lenis
   const sync = () => {
-    tide.progress = lenis.limit > 0 ? lenis.scroll / lenis.limit : 0
+    const span = ((RUNWAY_VH - 100) / 100) * window.innerHeight
+    tide.progress = span > 0 ? Math.min(lenis.scroll / span, 1) : 0
+    tide.overshootPx = Math.max(lenis.scroll - span, 0)
   }
   lenis.on('scroll', sync)
   sync()
   return () => {
     lenis.destroy()
+    if (activeLenis === lenis) activeLenis = null
     tide.progress = 0
+    tide.overshootPx = 0
   }
 }
