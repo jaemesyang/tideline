@@ -11,21 +11,26 @@ type SeedStore = {
   newTide: () => void
 }
 
-function readSeedFromUrl(): string | null {
-  const raw = new URLSearchParams(window.location.search).get('seed')
-  return raw ? normalizeSeed(raw) : null
-}
+// The URL never carries the current seed: a reload draws a fresh tide.
+// Sharing is explicit — shareUrl() builds a ?seed= link, and an incoming
+// ?seed= is honored once, then stripped, so the shared tide is itself
+// ephemeral after it's seen.
 
-// replaceState, not pushState: a refresh must not silently change the tide,
-// and back-button must not walk through discarded seeds.
-function writeSeedToUrl(seed: string) {
+function consumeSeedFromUrl(): string | null {
   const url = new URL(window.location.href)
-  url.searchParams.set('seed', seed)
+  const raw = url.searchParams.get('seed')
+  if (raw === null) return null
+  url.searchParams.delete('seed')
   history.replaceState(null, '', url)
+  return normalizeSeed(raw)
 }
 
-const initialSeed = readSeedFromUrl() ?? generateSeed()
-writeSeedToUrl(initialSeed)
+/** The shareable link for a tide — the only place a seed enters a URL. */
+export function shareUrl(seed: string): string {
+  return `${window.location.origin}${window.location.pathname}?seed=${seed}`
+}
+
+const initialSeed = consumeSeedFromUrl() ?? generateSeed()
 
 export const useSeed = create<SeedStore>((set) => ({
   seed: initialSeed,
@@ -33,13 +38,11 @@ export const useSeed = create<SeedStore>((set) => ({
   setSeed: (raw) => {
     const seed = normalizeSeed(raw)
     if (!seed) return false
-    writeSeedToUrl(seed)
     set({ seed, world: deriveWorld(seed) })
     return true
   },
   newTide: () => {
     const seed = generateSeed()
-    writeSeedToUrl(seed)
     set({ seed, world: deriveWorld(seed) })
   },
 }))

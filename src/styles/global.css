@@ -5,8 +5,9 @@
 
 .seed-tag,
 .seed-log-toggle,
-.skip-link,
-.audio-toggle {
+.resume-jump,
+.audio-toggle,
+.auto-toggle {
   font-family: var(--font-mono);
   font-size: var(--text-ui);
   color: var(--ink);
@@ -28,13 +29,11 @@
   animation: chrome-in 0.6s 0.5s both;
 }
 
-.seed-tag {
-  position: relative;
-}
-
-.seed-tag .copied {
-  position: absolute;
-  left: calc(100% + 10px);
+/* sits after the log toggle in the flex row — nothing to overlap */
+.seed-wrap .copied {
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink);
   white-space: nowrap;
   opacity: 0.75;
 }
@@ -48,7 +47,7 @@
   opacity: 1;
 }
 
-.skip-link {
+.resume-jump {
   position: fixed;
   top: 16px;
   right: 16px;
@@ -65,9 +64,25 @@
   animation: chrome-in 0.6s 0.5s both;
 }
 
-.skip-link:hover,
+.auto-toggle {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 40;
+  opacity: 0.85;
+  animation: chrome-in 0.6s 0.5s both;
+}
+
+.auto-toggle[aria-pressed='true'] {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.resume-jump:hover,
 .seed-tag:hover,
-.audio-toggle:hover {
+.audio-toggle:hover,
+.auto-toggle:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -147,6 +162,38 @@
   color: var(--ink-dim);
 }
 
+/* --- the explainer ------------------------------------------------------ */
+
+.about-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  width: min(390px, calc(100vw - 32px));
+  max-height: min(62vh, 520px);
+  overflow-y: auto;
+  padding: 16px 18px 6px;
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  border: 1px solid var(--hairline);
+  border-top: 2px solid var(--ink);
+  color: var(--ink);
+}
+
+.about-panel p {
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+
+.about-colophon {
+  padding-top: 11px;
+  border-top: 1px solid var(--hairline-faint);
+  font-family: var(--font-mono) !important;
+  font-size: var(--text-meta) !important;
+  line-height: 1.65 !important;
+  color: var(--ink-dim);
+}
+
 @keyframes chrome-in {
   from {
     opacity: 0;
@@ -156,16 +203,17 @@
   }
 }
 
-/* the one allowed line (§1). Fades against scroll via inline style. */
+/* the title plate over open water. Fades against scroll (frame loop). */
 .intro-line {
   position: fixed;
-  top: 30vh;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 30;
   font-family: var(--font-display);
-  font-size: var(--text-display);
-  letter-spacing: 0.01em;
+  font-size: var(--text-title);
+  line-height: 1.05;
+  letter-spacing: 0.005em;
   color: var(--ink);
   text-align: center;
   white-space: nowrap;
@@ -207,26 +255,30 @@
   left: 0;
   width: var(--label-w);
   pointer-events: auto;
-  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  background: color-mix(in srgb, var(--paper) 84%, transparent);
   color: var(--ink);
-  border: 1px solid var(--hairline);
-  border-top: 2px solid var(--ink);
-  border-radius: 1px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 70%, transparent);
   transition:
     width 0.18s ease,
-    opacity 0.15s linear;
+    opacity 0.15s linear,
+    background 0.15s ease;
   will-change: transform;
+}
+
+.label:hover {
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
 }
 
 .label.open {
   width: var(--label-w-open);
+  background: color-mix(in srgb, var(--paper) 95%, transparent);
   z-index: 5; /* the read card sits over its neighbours */
 }
 
 .label-head {
   display: block;
   width: 100%;
-  padding: 8px 12px 9px;
+  padding: 7px 11px 8px;
   background: none;
   border: 0;
   color: inherit;
@@ -239,8 +291,8 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 6px;
-  margin-bottom: 7px;
+  padding-bottom: 5px;
+  margin-bottom: 6px;
   border-bottom: 1px solid var(--hairline-faint);
   font-family: var(--font-mono);
   font-size: var(--text-meta);
@@ -267,10 +319,57 @@
 
 .label-more {
   display: block;
-  margin-top: 6px;
+  margin-top: 5px;
   font-family: var(--font-mono);
   font-size: var(--text-meta);
   color: var(--ink-dim);
+  opacity: 0.7;
+}
+
+/* Collapsed form: catalogue number + title on one line. The projector adds
+   `.compact` when a tide has uncovered more specimens than the viewport has
+   room for full cards; the mobile block below applies the same treatment to
+   every closed card. Opening one always restores it. */
+.label.compact:not(.open) .label-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 8px 11px;
+}
+
+.label.compact:not(.open) .label-meta {
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border-bottom: 0;
+}
+
+.label.compact:not(.open) .label-meta span + span {
+  display: none; /* the year — the number alone identifies it */
+}
+
+.label.compact:not(.open) .label-title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+
+.label.compact:not(.open) .label-summary {
+  display: none;
+}
+
+/* keep the affordance, drop the word */
+.label.compact:not(.open) .label-more {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 0;
+}
+
+.label.compact:not(.open) .label-more::before {
+  content: '+';
+  font-size: var(--text-meta);
 }
 
 /* grid-rows trick: animates open/closed without measuring heights */
@@ -456,8 +555,11 @@
 
 /* --- static composition (prefers-reduced-motion) ------------------------ */
 
+/* static composition: the beach is already exposed, so the title sits over
+   the water band at the top rather than dead-centre across the wrack */
 .intro-static {
   position: absolute;
+  top: 19%;
   animation: none;
 }
 
@@ -469,10 +571,52 @@
     --label-w-open: calc(100vw - 24px);
   }
 
+  /* Full-width cards stack, and a late tide exposes every specimen at once —
+     eight three-line cards walled the beach off completely on a phone. Every
+     closed card takes the collapsed form here, not just the overflow. */
+  .label:not(.open) .label-head {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    padding: 8px 11px;
+  }
+
+  .label:not(.open) .label-meta {
+    flex: 0 0 auto;
+    padding: 0;
+    margin: 0;
+    border-bottom: 0;
+  }
+
+  .label:not(.open) .label-meta span + span {
+    display: none;
+  }
+
+  .label:not(.open) .label-title {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+  }
+
+  .label:not(.open) .label-summary {
+    display: none;
+  }
+
+  .label:not(.open) .label-more {
+    flex: 0 0 auto;
+    margin: 0;
+    font-size: 0;
+  }
+
+  .label:not(.open) .label-more::before {
+    content: '+';
+    font-size: var(--text-meta);
+  }
+
   .intro-line {
-    white-space: normal;
-    width: min(88vw, 560px);
-    font-size: clamp(19px, 5.5vw, 27px);
+    font-size: clamp(30px, 9vw, 52px);
   }
 
   .resume-block {

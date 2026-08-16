@@ -8,13 +8,13 @@ import { staticMode } from '../lib/motion'
 // Names describe what that tide actually is — nothing else.
 
 const NOTABLE: { seed: string; name: string }[] = [
-  { seed: '0006-imjr', name: 'night, heavy surf' },
+  { seed: '0002-u05m', name: 'night, heavy surf' },
   { seed: '0005-qxkg', name: 'low sun, quiet' },
-  { seed: '0003-qffv', name: 'dawn, clear' },
+  { seed: '0009-fjyl', name: 'dawn, clear' },
   { seed: '0000-cdv1', name: 'dusk, calm' },
   { seed: '0001-15l5', name: 'overcast, rain' },
-  { seed: '0003-9b9v', name: 'haze' },
-  { seed: '0008-vijf', name: 'night, rain' },
+  { seed: '0006-imjr', name: 'night, snow' },
+  { seed: '0009-08uc', name: 'snow, low sun' },
 ]
 
 export function NotableTides({ onClose }: { onClose: () => void }) {

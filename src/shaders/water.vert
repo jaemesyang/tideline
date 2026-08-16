@@ -1,4 +1,9 @@
 // Open-water displacement: 2 Gerstner-style octaves, seeded.
+//
+// TUNING: overall amplitude is JS-side (src/tuning.ts → water.amplitude).
+// GLSL dials here: crest sharpening `q = 0.55`, horizon compression
+// `0.010 * away * away` (keep in sync with water.frag), far amplitude
+// falloff `mix(1.0, 0.32, ...)`.
 // Waves attenuate to zero approaching the shoreline; the swash zone is
 // handled entirely in the fragment shader (1D fronts, cheap).
 //
@@ -28,11 +33,18 @@ void main() {
   float depth = uShoreZ - xz.y; // > 0 in open water
   float att = smoothstep(0.4, 5.0, depth);
 
+  // fake perspective under the ortho camera: wave frequency rises and
+  // amplitude falls toward the horizon, so bands compress into the distance.
+  // Warp is in fixed plane space (not shore-relative) so scroll never smears it.
+  float away = clamp(20.0 - xz.y, 0.0, 60.0); // 0 at beach top → ~48 at horizon
+  vec2 xzWarp = vec2(xz.x, xz.y - 0.010 * away * away);
+  float farAtt = mix(1.0, 0.32, smoothstep(6.0, 44.0, away));
+
   float c1;
   float c2;
-  vec3 d1 = gerstner(xz, uOctave1, uOmega.x, c1);
-  vec3 d2 = gerstner(xz, uOctave2, uOmega.y, c2);
-  vec3 disp = (d1 + d2) * att;
+  vec3 d1 = gerstner(xzWarp, uOctave1, uOmega.x, c1);
+  vec3 d2 = gerstner(xzWarp, uOctave2, uOmega.y, c2);
+  vec3 disp = (d1 + d2) * att * farAtt;
 
   p.x += disp.x;
   p.y -= disp.z; // world z shift → local -y
@@ -40,7 +52,7 @@ void main() {
 
   vXZ = xz;
   float ampSum = max(uOctave1.x + uOctave2.x, 1e-4);
-  vCrest = att * (c1 * uOctave1.x + c2 * uOctave2.x) / ampSum;
+  vCrest = att * (0.4 + 0.6 * farAtt) * (c1 * uOctave1.x + c2 * uOctave2.x) / ampSum;
 
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }

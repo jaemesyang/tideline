@@ -9,6 +9,10 @@ export type LabelSlot = {
   dot: SVGCircleElement | null
   w: number // cached card size — kept fresh by a ResizeObserver
   h: number
+  /** `h` as last measured while NOT compacted. The projector decides how many
+   *  cards to compact from the full heights; measuring the compacted height
+   *  and feeding it back would make the decision oscillate frame to frame. */
+  hFull: number
 }
 
 export const labelSlots = new Map<string, LabelSlot>()
@@ -16,7 +20,7 @@ export const labelSlots = new Map<string, LabelSlot>()
 export function getSlot(id: string): LabelSlot {
   let slot = labelSlots.get(id)
   if (!slot) {
-    slot = { card: null, line: null, dot: null, w: 0, h: 0 }
+    slot = { card: null, line: null, dot: null, w: 0, h: 0, hFull: 0 }
     labelSlots.set(id, slot)
   }
   return slot

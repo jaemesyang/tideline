@@ -1,7 +1,8 @@
-// Seeded ambient audio (§5): filtered noise swells at the tide's period, an
-// occasional gull or buoy. Muted by default; this module is dynamic-imported
-// the first time the visitor turns sound on, so Tone.js never touches the
-// initial JS payload.
+// Seeded ambient audio (§5). Not a drone: a deep-water bed plus a wash layer
+// that breaks in discrete crashes — each wave builds bright, then hisses out
+// darker as it drains, at the tide's own period. Occasional gull or buoy.
+// Muted by default; dynamic-imported on first unmute so Tone.js stays out of
+// the initial payload.
 //
 // Event timing draws from a dedicated mulberry32 keyed off the seed — a
 // deterministic sequence that never touches deriveWorld's draw order.
@@ -9,106 +10,204 @@
 import * as Tone from 'tone'
 import { mulberry32, hashSeed } from '../seed/mulberry32'
 import type { World } from '../seed/deriveWorld'
+import { TUNING } from '../tuning'
+import { surf } from '../lib/surf'
 
 type Graph = {
   nodes: { dispose(): void }[]
-  timers: number[]
+  timers: Set<number>
+  intervals: number[]
+  master: Tone.Gain
 }
 
 let graph: Graph | null = null
 
-function teardown() {
-  if (!graph) return
-  for (const t of graph.timers) window.clearTimeout(t)
-  for (const n of graph.nodes) n.dispose()
+const FADE_OUT = 0.9 // seconds — the sea is faded in, so fade it out too
+
+/** Ride the level down, then dispose. A hard dispose clicked mid-wave. */
+function fadeOutAndTeardown() {
+  const g = graph
+  if (!g) return
   graph = null
+  for (const t of g.timers) window.clearTimeout(t)
+  for (const i of g.intervals) window.clearInterval(i) // stop crashing mid-fade
+  g.master.gain.rampTo(0, FADE_OUT)
+  window.setTimeout(() => {
+    for (const n of g.nodes) n.dispose()
+  }, FADE_OUT * 1000 + 120)
 }
 
 export async function start(world: World) {
   await Tone.start()
-  teardown()
+  fadeOutAndTeardown()
 
   const rng = mulberry32(hashSeed(world.seed) ^ 0x5eabed)
   const { swellPeriod, filterHz, gullChance, buoyChance } = world.audio
+  const weather = world.weather
+  const graphNodes: { dispose(): void }[] = []
+
+  // The crash / gull / buoy schedulers re-arm themselves forever. Pushing each
+  // id onto an array grew it without bound for as long as the tab stayed open;
+  // a set that drops its own entry on fire stays the size of what's pending.
+  const timers = new Set<number>()
+  const later = (fn: () => void, seconds: number) => {
+    const id = window.setTimeout(() => {
+      timers.delete(id)
+      fn()
+    }, seconds * 1000)
+    timers.add(id)
+  }
 
   const master = new Tone.Gain(0).toDestination()
-  master.gain.rampTo(0.9, 1.5) // fade the sea in, never cut it in
+  master.gain.rampTo(TUNING.audio.master, 2) // fade the sea in, never cut it in
 
-  const noise = new Tone.Noise('brown').start()
-  const filter = new Tone.Filter(filterHz, 'lowpass')
-  const swell = new Tone.Gain(0.1)
-  noise.connect(filter)
-  filter.connect(swell)
-  swell.connect(master)
+  // weather color on the whole mix: snow muffles everything
+  // lofi voicing: everything lives under a dark low-pass
+  const voicing = new Tone.Filter(
+    weather === 'snow' ? TUNING.audio.snowVoicingHz : TUNING.audio.voicingHz,
+    'lowpass',
+  )
+  voicing.connect(master)
 
-  // the swell: loudness breathes at the seeded period
-  const swellLfo = new Tone.LFO({
-    frequency: 1 / swellPeriod,
-    min: 0.04,
-    max: 0.24,
-    phase: 90,
-  })
-  swellLfo.connect(swell.gain)
-  swellLfo.start()
+  // bed: deep water, constant, slow one-third-octave breathing
+  const bedNoise = new Tone.Noise('brown').start()
+  const bedFilter = new Tone.Filter(Math.max(180, filterHz * 0.3), 'lowpass')
+  const bedGain = new Tone.Gain(0.14)
+  bedNoise.connect(bedFilter)
+  bedFilter.connect(bedGain)
+  bedGain.connect(voicing)
+  const bedLfo = new Tone.LFO({ frequency: 1 / (swellPeriod * 2.3), min: 0.1, max: 0.18 })
+  bedLfo.connect(bedGain.gain)
+  bedLfo.start()
 
-  // filter character drifts slower than the swell — surf, not a siren
-  const colorLfo = new Tone.LFO({
-    frequency: 1 / (swellPeriod * 2.7),
-    min: filterHz * 0.6,
-    max: filterHz * 1.35,
-  })
-  colorLfo.connect(filter.frequency)
-  colorLfo.start()
+  // wash: the breaking layer — pink noise through a bandpass that opens
+  // bright on the crash and closes dark on the drain
+  const washNoise = new Tone.Noise('pink').start()
+  const washFilter = new Tone.Filter(filterHz, 'bandpass')
+  washFilter.Q.value = 0.4
+  const washGain = new Tone.Gain(0.015)
+  washNoise.connect(washFilter)
+  washFilter.connect(washGain)
+  washGain.connect(voicing)
 
+  // Crashes ride the water you are actually watching. Water.tsx publishes the
+  // live swash run-up to lib/surf.ts every frame; a crash fires on the rising
+  // edge of a front, so the sound and the picture break together. Before this
+  // the wash ran on world.audio.swellPeriod, an entirely separate draw from
+  // world.water.swash — the sea sounded like a different sea.
+  const crashScale = weather === 'wind' ? 1.35 : weather === 'snow' ? 0.7 : 1
+  let lastCrash = -Infinity
+  const crash = (period: number) => {
+    lastCrash = performance.now()
+    const peak = (TUNING.audio.crashPeak.base + rng() * TUNING.audio.crashPeak.extra) * crashScale
+    const rise = 0.6 + rng() * 0.45
+    const fall = Math.max(period * 0.55, 1.5)
+    washFilter.frequency.rampTo(480 + rng() * 380, rise)
+    washGain.gain.rampTo(peak, rise)
+    later(() => {
+      washFilter.frequency.rampTo(230 + rng() * 110, fall)
+      washGain.gain.rampTo(0.018, fall)
+    }, rise)
+  }
+
+  // rising-edge detector with hysteresis, so one front fires exactly one crash
+  const BREAK_AT = 0.5
+  let armed = true
+  const watchSurf = window.setInterval(() => {
+    if (performance.now() - surf.at > 400) return // no frames: fallback owns it
+    if (armed && surf.runup >= BREAK_AT) {
+      armed = false
+      crash(surf.period)
+    } else if (!armed && surf.runup < BREAK_AT * 0.55) {
+      armed = true
+    }
+  }, 50)
+
+  // Fallback: hidden tab, reduced motion, or a scene that never mounted. Keeps
+  // the sea alive on its own clock if nothing has broken in a while.
+  const fallback = () => {
+    const period = surf.period || swellPeriod
+    if (performance.now() - lastCrash > period * 1.7 * 1000) crash(period)
+    later(fallback, 0.75)
+  }
+  crash(surf.period || swellPeriod)
+  later(fallback, 2)
+
+  // rain: a fine patter above the surf
+  if (weather === 'rain') {
+    const patter = new Tone.Noise('white').start()
+    const patterFilter = new Tone.Filter(2600, 'highpass')
+    const patterGain = new Tone.Gain(TUNING.audio.rainPatterLevel)
+    patter.connect(patterFilter)
+    patterFilter.connect(patterGain)
+    patterGain.connect(voicing)
+    graphNodes.push(patter, patterFilter, patterGain)
+  }
+
+  // gull: a soft falling cry, sometimes doubled — never in snow
   const gull = new Tone.Synth({
     oscillator: { type: 'triangle' },
-    envelope: { attack: 0.04, decay: 0.25, sustain: 0.1, release: 0.2 },
-    portamento: 0.12,
+    envelope: { attack: 0.03, decay: 0.18, sustain: 0.2, release: 0.25 },
   })
-  const gullGain = new Tone.Gain(0.05)
+  const gullGain = new Tone.Gain(TUNING.audio.gullLevel)
   gull.connect(gullGain)
-  gullGain.connect(master)
-
-  const buoy = new Tone.Synth({
-    oscillator: { type: 'sine' },
-    envelope: { attack: 0.01, decay: 1.8, sustain: 0, release: 1.2 },
-  })
-  const buoyGain = new Tone.Gain(0.045)
-  buoy.connect(buoyGain)
-  buoyGain.connect(master)
-
-  const timers: number[] = []
-  const scheduleGull = () => {
-    const wait = (8 + rng() * 10) * 1000
-    timers.push(
-      window.setTimeout(() => {
-        if (rng() < gullChance) {
-          const f = 950 + rng() * 450
-          gull.triggerAttackRelease(f, 0.28)
-          gull.frequency.rampTo(f * 0.68, 0.3)
-        }
-        scheduleGull()
-      }, wait),
-    )
+  gullGain.connect(voicing)
+  const gullOdds = weather === 'snow' ? 0 : gullChance
+  const cry = () => {
+    const f = 1150 + rng() * 350
+    gull.triggerAttackRelease(f, 0.3)
+    gull.frequency.rampTo(f * 0.66, 0.24)
   }
-  const scheduleBuoy = () => {
-    const wait = (14 + rng() * 12) * 1000
-    timers.push(
-      window.setTimeout(() => {
-        if (rng() < buoyChance) buoy.triggerAttackRelease(196, 2)
-        scheduleBuoy()
-      }, wait),
-    )
+  const scheduleGull = () => {
+    later(() => {
+      if (rng() < gullOdds) {
+        cry()
+        if (rng() < 0.5) later(cry, 0.4)
+      }
+      scheduleGull()
+    }, 11 + rng() * 12)
   }
   scheduleGull()
+
+  // buoy: a distant soft bell (FM), not a raw sine
+  const buoy = new Tone.FMSynth({
+    harmonicity: 2.01,
+    modulationIndex: 6,
+    oscillator: { type: 'sine' },
+    modulation: { type: 'sine' },
+    envelope: { attack: 0.005, decay: 2.6, sustain: 0, release: 1.5 },
+    modulationEnvelope: { attack: 0.002, decay: 0.5, sustain: 0, release: 0.4 },
+  })
+  const buoyGain = new Tone.Gain(TUNING.audio.buoyLevel)
+  buoy.connect(buoyGain)
+  buoyGain.connect(voicing)
+  const scheduleBuoy = () => {
+    later(() => {
+      if (rng() < buoyChance) buoy.triggerAttackRelease(233, 2.5)
+      scheduleBuoy()
+    }, 16 + rng() * 14)
+  }
   scheduleBuoy()
 
-  graph = {
-    nodes: [master, noise, filter, swell, swellLfo, colorLfo, gull, gullGain, buoy, buoyGain],
-    timers,
-  }
+  graphNodes.push(
+    master,
+    voicing,
+    bedNoise,
+    bedFilter,
+    bedGain,
+    bedLfo,
+    washNoise,
+    washFilter,
+    washGain,
+    gull,
+    gullGain,
+    buoy,
+    buoyGain,
+  )
+
+  graph = { nodes: graphNodes, timers, intervals: [watchSurf], master }
 }
 
 export function stop() {
-  teardown()
+  fadeOutAndTeardown()
 }

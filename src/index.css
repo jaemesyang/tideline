@@ -14,6 +14,17 @@ body,
 
 body {
   font: 17px/1.5 var(--font-body, system-ui), sans-serif;
-  background: var(--sky, #e3c892);
+  /* the sky, seen above the transparent top of the canvas: deep overhead,
+     glowing at the horizon line (~365px above viewport center at zoom 26) */
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--sky, #e3c892) 86%, var(--ink, #3b3222)) 0,
+      var(--sky, #e3c892) calc(50vh - 420px),
+      color-mix(in srgb, var(--sky, #e3c892) 52%, var(--foam, #efe3c8)) calc(50vh - 362px),
+      var(--sky, #e3c892) calc(50vh - 220px)
+    )
+    fixed;
+  background-color: var(--sky, #e3c892);
   -webkit-font-smoothing: antialiased;
 }

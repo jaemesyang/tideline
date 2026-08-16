@@ -2,18 +2,21 @@ import { useEffect } from 'react'
 import { useSeed } from './seed/useSeed'
 import { SeedDebug } from './seed/SeedDebug'
 import { Scene } from './scene/Scene'
-import { SkipLink } from './ui/SkipLink'
+import { ResumeJump } from './ui/ResumeJump'
 import { SeedTag } from './ui/SeedTag'
 import { AudioToggle } from './ui/AudioToggle'
+import { AutoTide } from './ui/AutoTide'
 import { LabelLayer } from './ui/Label'
 import { ResumeBlock } from './ui/ResumeBlock'
 import { EndChoice } from './ui/EndChoice'
 import { introEl } from './ui/labelBridge'
-import { initTideScroll, nudgeTide, RUNWAY_VH } from './lib/scroll'
+import { initTideScroll, nudgeTide, setTideRest, RUNWAY_VH } from './lib/scroll'
+import { TUNING } from './tuning'
 import { staticMode } from './lib/motion'
 
 function App() {
   const palette = useSeed((s) => s.world.palette)
+  const wetLine = useSeed((s) => s.world.sand.wetLine)
   const debug = new URLSearchParams(window.location.search).has('debug')
 
   useEffect(() => {
@@ -21,14 +24,19 @@ function App() {
     return initTideScroll()
   }, [debug])
 
+  // each tide comes in to its own mark (deriveWorld's sand.wetLine)
+  useEffect(() => {
+    setTideRest(wetLine)
+  }, [wetLine])
+
   // load sequence (§6): if the visitor only watches, the tide begins to go
   // out on its own after a beat. One gentle nudge, never repeated, and only
   // if they haven't already scrolled.
   useEffect(() => {
-    if (debug || staticMode) return
+    if (debug || staticMode || TUNING.scroll.nudgeAfterSeconds <= 0) return
     const t = window.setTimeout(() => {
       if (window.scrollY < 8) nudgeTide()
-    }, 4500)
+    }, TUNING.scroll.nudgeAfterSeconds * 1000)
     return () => window.clearTimeout(t)
   }, [debug])
 
@@ -51,7 +59,7 @@ function App() {
         introEl.current = el
       }}
     >
-      This tide has never come in before and won&rsquo;t again.
+      James Yang
     </p>
   )
 
@@ -71,9 +79,10 @@ function App() {
       )}
       <ResumeBlock />
       <EndChoice />
-      <SkipLink />
+      <ResumeJump />
       <SeedTag />
       <AudioToggle />
+      <AutoTide />
     </>
   )
 }

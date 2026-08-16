@@ -19,6 +19,7 @@ function LabelCard({ item, open, onToggle }: { item: WrackItem; open: boolean; o
     const ro = new ResizeObserver(() => {
       slot.w = el.offsetWidth
       slot.h = el.offsetHeight
+      if (!el.classList.contains('compact')) slot.hFull = slot.h
     })
     ro.observe(el)
     return () => {

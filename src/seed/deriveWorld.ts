@@ -76,7 +76,9 @@ export type World = {
 }
 
 const TIMES: readonly TimeOfDay[] = ['dawn', 'overcast', 'afternoon', 'dusk', 'night']
-const WEATHERS: readonly Weather[] = ['clear', 'haze', 'rain', 'wind']
+// NOTE: adding 'snow' (2026-08-14) re-rolled the weather of every existing
+// tide — accepted deliberately; the notable-tides list was re-probed after.
+const WEATHERS: readonly Weather[] = ['clear', 'haze', 'rain', 'wind', 'snow']
 
 export function deriveWorld(seed: string): World {
   const rng = mulberry32(hashSeed(seed))
@@ -133,7 +135,12 @@ export function deriveWorld(seed: string): World {
 
   // 6. wrack line — about pinned first, contact pinned last, always present.
   // Only projects/writing shuffle (Fisher-Yates) and fill the middle slots.
-  const wrackCount = int(6, 9)
+  // NOTE: the range was int(6, 9) (2026-08-14). With about+contact pinned the
+  // shuffle pool only holds `specimens.length - 2` entries, so 8 and 9 both
+  // meant "every specimen" and half of all tides carried the whole catalogue.
+  // Changed 2026-08-15: same single draw, so nothing downstream shifted, but
+  // existing tides now bring a different set of objects.
+  const wrackCount = int(5, 8)
   const about = specimens.find((s) => s.kind === 'about')
   const contact = specimens.find((s) => s.kind === 'contact')
   const pool = specimens.filter((s) => s.kind !== 'about' && s.kind !== 'contact')
@@ -143,10 +150,20 @@ export function deriveWorld(seed: string): World {
   }
   const middle = pool.slice(0, Math.min(wrackCount - 2, pool.length))
   const chosen = [about, ...middle, contact].filter((s): s is Specimen => s !== undefined)
+  // x slots are a deterministic permutation of the exposure order — assigning
+  // x by index made the wrack line run diagonally (x and z both tracked i).
+  // Hash-sorted, zero extra rng draws, so the draw order note stays true.
+  const slotRank: number[] = []
+  chosen
+    .map((s, i) => ({ i, key: hashSeed(`${seed}:${s.id}`) }))
+    .sort((a, b) => a.key - b.key)
+    .forEach(({ i }, rank) => {
+      slotRank[i] = rank
+    })
   const wrack: WrackItem[] = chosen.map((specimen, i) => ({
     specimen,
     catalogueNo: `TL-${String(i + 1).padStart(2, '0')}`,
-    x: (i + 0.5) / chosen.length + range(-0.3, 0.3) / chosen.length,
+    x: (slotRank[i] + 0.5) / chosen.length + range(-0.3, 0.3) / chosen.length,
     rotation: range(0, Math.PI * 2),
     buriedDepth: range(0.05, 0.45),
   }))

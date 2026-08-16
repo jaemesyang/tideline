@@ -8,7 +8,7 @@ export type PaletteRole = 'sky' | 'water' | 'sand' | 'foam' | 'ink' | 'paper'
 export type Palette = Record<PaletteRole, string>
 
 export type TimeOfDay = 'dawn' | 'overcast' | 'afternoon' | 'dusk' | 'night'
-export type Weather = 'clear' | 'haze' | 'rain' | 'wind'
+export type Weather = 'clear' | 'haze' | 'rain' | 'wind' | 'snow'
 
 export const PALETTE_NAMES: Record<TimeOfDay, string> = {
   dawn: 'rose',
@@ -140,6 +140,14 @@ export function applyWeather(p: Palette, weather: Weather): Palette {
     adjust('water', 0.9, -0.06)
     adjust('sand', 0.8, 0)
     adjust('foam', 0.9, 0)
+  } else if (weather === 'snow') {
+    // cold and drained: desaturate hard, lift, dust the sand toward the foam
+    for (const role of ['sky', 'water', 'sand', 'foam'] as PaletteRole[]) {
+      const c = hexToHsl(p[role])
+      out[role] = hslToHex({ h: c.h, s: c.s * 0.5, l: Math.min(1, c.l + 0.05) })
+    }
+    out.sand = mixHex(out.sand, out.foam, 0.45)
+    out.water = mixHex(out.water, out.sky, 0.18)
   } else {
     // wind: churned water and foam read lighter and greyer
     adjust('sky', 0.95, 0)

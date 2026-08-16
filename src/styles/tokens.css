@@ -14,6 +14,7 @@
   --text-body: 15px; /* label summary + detail */
   --text-resume: 16.5px; /* deepest-point résumé body */
   --text-display: 27px;
+  --text-title: clamp(38px, 7.5vw, 86px); /* the name over open water */
 
   /* palette (runtime-overridden) */
   --sky: #e3c892;
