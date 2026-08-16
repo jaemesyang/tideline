@@ -4,6 +4,7 @@ import { SeedDebug } from './seed/SeedDebug'
 import { Scene } from './scene/Scene'
 import { ResumeJump } from './ui/ResumeJump'
 import { SeedTag } from './ui/SeedTag'
+import { AboutTour } from './ui/AboutTour'
 import { AudioToggle } from './ui/AudioToggle'
 import { AutoTide } from './ui/AutoTide'
 import { LabelLayer } from './ui/Label'
@@ -53,14 +54,15 @@ function App() {
   }
 
   const intro = (
-    <p
-      className={staticMode ? 'intro-line intro-static' : 'intro-line'}
+    <div
+      className={staticMode ? 'intro intro-static' : 'intro'}
       ref={(el) => {
         introEl.current = el
       }}
     >
-      James Yang
-    </p>
+      <p className="intro-line">James Yang</p>
+      <AboutTour />
+    </div>
   )
 
   return (

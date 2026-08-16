@@ -10,8 +10,25 @@ Seeds are ephemeral: the URL never carries one, and a reload draws fresh.
 Sharing is explicit — clicking the seed tag (or `Keep this tide`) copies a
 `?seed=xxxx-xxxx` link, which is honored once on load and then stripped.
 
-**Chrome:** seed tag + `log` (notable tides) + `what is this?` (explainer)
-top-left, `résumé →` top-right, `auto:` bottom-left, `sound:` bottom-right.
+**Chrome:** seed tag + `log` (kept tides) top-left, `résumé →` top-right,
+`auto:` bottom-left, `sound:` bottom-right.
+
+**`what is this?`** is not chrome — it sits in the middle of the frame directly
+under the title (`ui/AboutTour.tsx`), because at scroll 0 it is the only thing
+to do besides scroll. It fades and goes non-interactive with the intro line as
+the tide starts out. It opens a walked tour (`ui/Tour.tsx`): nine steps that
+ring each control in turn and advance on their own, pausing on hover or focus,
+ending on *Start scrolling*. Three things to know if you touch it:
+
+- It is **portalled to `<body>`**. `.intro` centres itself with a `transform`,
+  and a transformed ancestor becomes the containing block for `position: fixed`
+  descendants — rendered in place, the whole overlay was trapped inside the
+  title's own box.
+- The overlay is the **ring's own `box-shadow`** (`0 0 0 100vmax`), so the
+  control being described is the one lit thing on screen. Steps with no target
+  use a plain `.tour-scrim` instead.
+- Steps whose control isn't on the page are dropped at mount — reduced motion
+  has no `auto:`, so the tour is 8 steps there and 9 everywhere else.
 Auto mode runs the tide out on its own at a constant pace and comes to rest on
 the résumé; any wheel, touch, or key input hands control straight back and
 switches it off — it is never a scroll-jack. Pace lives in `tuning.ts` →
@@ -48,9 +65,24 @@ every existing tide's eggs untouched; inserting mid-list re-rolls them all.
 | `src/lib/easters.ts` | which hidden things a given tide carries |
 | `src/lib/surf.ts` | live swash state, written by the water and read by the audio |
 | `src/lib/lightRig.ts` | the per-time-of-day sun: lights *and* the water's reflected lane |
-| `src/ui/` | labels, seed tag, notable tides, explainer, résumé block, end choice, audio toggle, auto mode |
+| `src/ui/` | labels, seed tag, kept tides, the tour, résumé block, end choice, audio toggle, auto mode |
 | `src/audio/ambient.ts` | the sound (lazy-loaded on first unmute) |
-| `src/ui/NotableTides.tsx` | the curated seed list — swap entries freely, verify with `npm run probe` |
+| `src/ui/NotableTides.tsx` | the kept seed list. Add a seed and an optional human note; **what each tide *is* is derived from the seed**, never typed — hand-written names silently went stale when `snow` re-rolled every weather |
+
+## Where the words live
+
+Nothing user-visible is hard-coded in a component except the chrome's own
+labels. If you are changing copy, it is one of these:
+
+| text | file |
+|---|---|
+| **every specimen: title, year, one-line summary, full detail, links** | `src/content.ts` — this is the one that matters |
+| the intro line over the water | `src/App.tsx` (`James Yang`) |
+| the tour's nine steps | `src/ui/Tour.tsx` (`STEPS`) |
+| the kept-tide list and its notes | `src/ui/NotableTides.tsx` (`NOTABLE`) |
+| résumé heading, `N specimens catalogued`, the footnote | `src/ui/ResumeBlock.tsx` |
+| `Keep this tide` / `Let it go` | `src/ui/EndChoice.tsx` |
+| `résumé →`, `auto:`, `sound:`, `tide`, `log`, `what is this?` | `ResumeJump` / `AutoTide` / `AudioToggle` / `SeedTag` |
 
 ## Rules that keep it working
 
@@ -97,7 +129,7 @@ laid out before all the others so they move around it instead of over it.
 `TOP_KEEPOUT`/`BOTTOM_KEEPOUT` reserve the chrome rows.
 
 **Budgets.** 60fps desktop / 30fps mobile floor, initial JS under 400 kB
-gzipped (currently ~324 kB; Tone.js is a lazy chunk that loads on unmute).
+gzipped (currently ~325 kB; Tone.js is a lazy chunk that loads on unmute).
 Check with `npm run build` and the fps readout in any screenshot session.
 
 **Lenis owns the scroll.** It smooths wheel and touch but never sees the

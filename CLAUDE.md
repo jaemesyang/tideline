@@ -32,9 +32,12 @@ changes directly, verify, and report.
 - **Auto mode** (`auto:` bottom-left) runs the tide out hands-free to the
   résumé. Opt-in and interruptible by any scroll input, so it does not
   violate the no-scroll-jacking rule — keep it that way.
-- **A `what is this?` panel explains the concept.** The spec forbade this;
-  James asked for it. Keep it dry and factual, and never list what the rare
-  tides carry — the eggs stay unannounced.
+- **A `what is this?` tour explains the concept.** The spec forbade this;
+  James asked for it. The button sits in the middle of the frame under the
+  title, and the tour walks the controls one ring at a time (`ui/Tour.tsx`).
+  One step now says that some tides carry things most don't — James asked for
+  the eggs to be *mentioned*. Mentioning is the whole licence: never name one,
+  never list them, never say how rare.
 
 ## Working here
 

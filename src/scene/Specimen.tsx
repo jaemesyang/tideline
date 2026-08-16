@@ -322,9 +322,13 @@ export function Wrack() {
       }
     }
 
-    // the one line of type fades as the tide starts to go out
+    // The title and its `what is this?` button fade as the tide starts to go
+    // out. The cluster is interactive now, so it has to leave properly —
+    // opacity 0 alone would leave an invisible button catching clicks.
     if (introEl.current && !staticMode) {
-      introEl.current.style.opacity = String(Math.min(Math.max(1 - tide.progress * 7, 0), 1))
+      const fade = Math.min(Math.max(1 - tide.progress * 7, 0), 1)
+      introEl.current.style.opacity = String(fade)
+      introEl.current.style.visibility = fade < 0.02 ? 'hidden' : 'visible'
     }
     // the whole label layer yields to the résumé block at the deepest point
     if (layerEl.current) {

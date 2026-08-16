@@ -83,6 +83,7 @@ let activeLenis: Lenis | null = null
 
 /** "Let it go": ride the tide back in, then hand over (draw the new seed). */
 export function scrollTideIn(onDone: () => void) {
+  releaseNudge()
   stopAutoTide()
   if (activeLenis) {
     activeLenis.scrollTo(0, { duration: TUNING.scroll.letGoSeconds, onComplete: onDone, lock: true })
@@ -94,6 +95,7 @@ export function scrollTideIn(onDone: () => void) {
 
 /** Smoothly return to the top (notable-tide loads). */
 export function scrollToTop(duration = 1.2) {
+  releaseNudge()
   stopAutoTide()
   if (activeLenis) activeLenis.scrollTo(0, { duration })
   else window.scrollTo(0, 0)
@@ -121,9 +123,19 @@ function isScrollKey(e: KeyboardEvent): boolean {
   return SCROLL_KEYS.has(e.key)
 }
 
+// The load nudge is a one-time thing for a visitor who has done nothing yet.
+// Once anyone takes the wheel — a scroll, a key, a tide loaded from the log —
+// it must stay dead, or it fires into the middle of whatever they asked for.
+let handedOver = false
+
+/** The visitor has taken the wheel; the load nudge is off for good. */
+export function releaseNudge(): void {
+  handedOver = true
+}
+
 /** The load-sequence nudge: the tide visibly begins to go out (§6). */
 export function nudgeTide() {
-  if (isAutoRunning()) return // auto mode is already carrying the tide out
+  if (handedOver || isAutoRunning()) return // someone else is already driving
   activeLenis?.scrollTo(0.16 * window.innerHeight, { duration: 2.6 })
 }
 
@@ -136,6 +148,7 @@ function resumeTargetY(): number | null {
 
 /** The recruiter exit: ride the tide all the way out to the résumé block. */
 export function scrollToResume() {
+  releaseNudge()
   stopAutoTide() // never let two programmatic scrolls fight
   const el = document.querySelector<HTMLElement>('.resume-block')
   if (!el) return
@@ -156,6 +169,7 @@ export function isAutoRunning(): boolean {
 
 /** Start auto mode. `onEnd` fires when it finishes OR the visitor interrupts. */
 export function startAutoTide(onEnd: () => void) {
+  releaseNudge()
   stopAutoTide()
   const lenis = activeLenis
   const target = resumeTargetY()
@@ -249,6 +263,7 @@ function keyScroll(lenis: Lenis, e: KeyboardEvent) {
       break
   }
   e.preventDefault()
+  releaseNudge()
   // Removing auto's own keydown listener mid-dispatch keeps it from firing
   // after this one and immediately undoing the scroll we just asked for.
   stopAutoTide()
@@ -260,6 +275,8 @@ export function initTideScroll(): () => void {
   activeLenis = lenis
   const onKey = (e: KeyboardEvent) => keyScroll(lenis, e)
   window.addEventListener('keydown', onKey)
+  window.addEventListener('wheel', releaseNudge, { passive: true, once: true })
+  window.addEventListener('touchstart', releaseNudge, { passive: true, once: true })
   const sync = () => {
     const span = ((RUNWAY_VH - 100) / 100) * window.innerHeight
     tide.progress = span > 0 ? Math.min(lenis.scroll / span, 1) : 0
@@ -269,6 +286,8 @@ export function initTideScroll(): () => void {
   sync()
   return () => {
     window.removeEventListener('keydown', onKey)
+    window.removeEventListener('wheel', releaseNudge)
+    window.removeEventListener('touchstart', releaseNudge)
     lenis.destroy()
     if (activeLenis === lenis) activeLenis = null
     tide.progress = 0

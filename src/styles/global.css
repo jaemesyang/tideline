@@ -5,6 +5,7 @@
 
 .seed-tag,
 .seed-log-toggle,
+.about-toggle,
 .resume-jump,
 .audio-toggle,
 .auto-toggle {
@@ -91,7 +92,7 @@
 
 .tide-log {
   position: absolute;
-  top: calc(100% + 12px);
+  top: calc(100% + 10px);
   left: 0;
   min-width: 272px;
   white-space: nowrap;
@@ -101,10 +102,25 @@
   border-top: 2px solid var(--ink);
 }
 
-.tide-log-row {
+.tide-log-head {
   display: flex;
   justify-content: space-between;
   gap: 18px;
+  padding: 2px 12px 7px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--hairline-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.tide-log-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 14px;
   width: 100%;
   padding: 5px 12px;
   background: none;
@@ -116,7 +132,36 @@
   cursor: pointer;
 }
 
-.tide-log-row:hover span:first-child {
+.tide-log-row:hover .tide-log-what {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tide-log-row[aria-current] .tide-log-what {
+  font-weight: 600;
+}
+
+.tide-log-note {
+  font-size: var(--text-meta);
+  color: var(--ink-dim);
+  opacity: 0.75;
+}
+
+.tide-log-draw {
+  display: block;
+  width: 100%;
+  padding: 7px 12px 5px;
+  background: none;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink-dim);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tide-log-draw:hover {
+  color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -162,36 +207,159 @@
   color: var(--ink-dim);
 }
 
-/* --- the explainer ------------------------------------------------------ */
+/* --- the tour ----------------------------------------------------------- */
+/* Rings a control and says what it does. No scrim and no focus trap: the page
+   stays fully usable underneath, and the ring never eats a click. */
 
-.about-panel {
+.tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* The ring's own shadow IS the overlay: one spread big enough to cover any
+   viewport, punched through at the control being described. */
+.tour-ring {
   position: absolute;
-  top: calc(100% + 12px);
+  border: 1px solid var(--paper);
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.42);
+  transition:
+    left 0.22s ease,
+    top 0.22s ease,
+    width 0.22s ease,
+    height 0.22s ease;
+}
+
+/* the steps that are about the scene rather than a control */
+.tour-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.tour-card {
+  position: absolute;
+  top: 0;
   left: 0;
-  width: min(390px, calc(100vw - 32px));
-  max-height: min(62vh, 520px);
-  overflow-y: auto;
-  padding: 16px 18px 6px;
-  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  padding: 13px 16px 12px;
+  background: color-mix(in srgb, var(--paper) 97%, transparent);
   border: 1px solid var(--hairline);
   border-top: 2px solid var(--ink);
   color: var(--ink);
+  pointer-events: auto;
+  transition: transform 0.22s ease;
 }
 
-.about-panel p {
-  margin: 0 0 12px;
+.tour-card:focus {
+  outline: none;
+}
+
+.tour-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--hairline-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  letter-spacing: 0.03em;
+  color: var(--ink-dim);
+}
+
+.tour-skip {
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tour-skip:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tour-title {
+  margin: 0 0 5px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.tour-body {
+  margin: 0;
   font-family: var(--font-body);
   font-size: var(--text-body);
   line-height: 1.55;
+  color: var(--ink-dim);
 }
 
-.about-colophon {
-  padding-top: 11px;
+.tour-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 9px;
   border-top: 1px solid var(--hairline-faint);
-  font-family: var(--font-mono) !important;
-  font-size: var(--text-meta) !important;
-  line-height: 1.65 !important;
+}
+
+.tour-nav button {
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tour-nav button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.tour-nav button:not(:disabled):hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tour-colophon {
+  margin: 11px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid var(--hairline-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  line-height: 1.6;
   color: var(--ink-dim);
+}
+
+/* how long this step holds before it moves on; pauses on hover or focus */
+.tour-clock {
+  height: 2px;
+  margin: 11px -16px -12px;
+  background: var(--hairline-faint);
+}
+
+.tour-clock-fill {
+  height: 100%;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+  transform-origin: left center;
+  animation: tour-dwell linear forwards;
+}
+
+@keyframes tour-dwell {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 @keyframes chrome-in {
@@ -204,12 +372,24 @@
 }
 
 /* the title plate over open water. Fades against scroll (frame loop). */
-.intro-line {
+/* Title and `what is this?` travel together: one element for the frame loop to
+   fade against scroll (see the projector in scene/Specimen.tsx). */
+.intro {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  pointer-events: none;
+  /* backwards, not both: after the entrance the frame loop owns opacity */
+  animation: chrome-in 1.1s 0.9s backwards;
+}
+
+.intro-line {
   font-family: var(--font-display);
   font-size: var(--text-title);
   line-height: 1.05;
@@ -217,10 +397,25 @@
   color: var(--ink);
   text-align: center;
   white-space: nowrap;
-  pointer-events: none;
   margin: 0;
-  /* backwards, not both: after the entrance the frame loop owns opacity */
-  animation: chrome-in 1.1s 0.9s backwards;
+}
+
+.about-toggle {
+  padding: 5px 14px 6px;
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 45%, transparent);
+  color: var(--ink);
+  opacity: 0.85;
+  pointer-events: auto;
+  transition:
+    opacity 0.15s linear,
+    background 0.15s ease;
+}
+
+.about-toggle:hover,
+.about-toggle[aria-pressed='true'] {
+  opacity: 1;
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
 }
 
 /* --- field-log labels --------------------------------------------------- */
@@ -617,6 +812,10 @@
 
   .intro-line {
     font-size: clamp(30px, 9vw, 52px);
+  }
+
+  .intro {
+    gap: 14px;
   }
 
   .resume-block {

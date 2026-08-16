@@ -1,18 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSeed, shareUrl } from '../seed/useSeed'
 import { NotableTides } from './NotableTides'
-import { WhatIsThis } from './WhatIsThis'
 
 // The tide-log entry (§1): always visible, mono, click copies the shareable
-// seeded URL. `log` opens the notable-tides list (§6b); `what is this?` opens
-// the explainer. One panel at a time.
-
-type Panel = 'log' | 'about' | null
+// seeded URL. `log` opens the notable-tides list (§6b) beside it.
+//
+// `what is this?` used to live here; it moved to the middle of the frame under
+// the title (ui/AboutTour.tsx), where a first-time visitor actually looks.
 
 export function SeedTag() {
   const seed = useSeed((s) => s.seed)
   const [copied, setCopied] = useState<string | null>(null)
-  const [panel, setPanel] = useState<Panel>(null)
+  const [logOpen, setLogOpen] = useState(false)
   const timer = useRef<number>(undefined)
   const wrap = useRef<HTMLDivElement>(null)
 
@@ -31,15 +30,13 @@ export function SeedTag() {
     )
   }
 
-  const toggle = (which: Exclude<Panel, null>) => setPanel((p) => (p === which ? null : which))
-
   useEffect(() => {
-    if (!panel) return
+    if (!logOpen) return
     const close = (e: PointerEvent) => {
-      if (wrap.current && !wrap.current.contains(e.target as Node)) setPanel(null)
+      if (wrap.current && !wrap.current.contains(e.target as Node)) setLogOpen(false)
     }
     const esc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPanel(null)
+      if (e.key === 'Escape') setLogOpen(false)
     }
     window.addEventListener('pointerdown', close)
     window.addEventListener('keydown', esc)
@@ -47,7 +44,7 @@ export function SeedTag() {
       window.removeEventListener('pointerdown', close)
       window.removeEventListener('keydown', esc)
     }
-  }, [panel])
+  }, [logOpen])
 
   return (
     <div className="seed-wrap" ref={wrap}>
@@ -57,26 +54,17 @@ export function SeedTag() {
       <button
         type="button"
         className="seed-log-toggle"
-        aria-expanded={panel === 'log'}
-        onClick={() => toggle('log')}
+        aria-expanded={logOpen}
+        onClick={() => setLogOpen((o) => !o)}
       >
         log
-      </button>
-      <button
-        type="button"
-        className="seed-log-toggle"
-        aria-expanded={panel === 'about'}
-        onClick={() => toggle('about')}
-      >
-        what is this?
       </button>
       {copied && (
         <span className="copied" aria-live="polite">
           {copied}
         </span>
       )}
-      {panel === 'log' && <NotableTides onClose={() => setPanel(null)} />}
-      {panel === 'about' && <WhatIsThis />}
+      {logOpen && <NotableTides onClose={() => setLogOpen(false)} />}
     </div>
   )
 }
