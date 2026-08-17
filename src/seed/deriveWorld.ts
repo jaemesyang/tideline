@@ -22,6 +22,7 @@ import {
   type Weather,
 } from '../lib/palettes'
 import { specimens, type Specimen } from '../content'
+import { CARNIVAL_PALETTE, isCarnival } from '../lib/carnival'
 
 export type GerstnerOctave = {
   amplitude: number
@@ -73,12 +74,14 @@ export type World = {
     gullChance: number
     buoyChance: number
   }
+  /** The one seed that is not like the others. See lib/carnival.ts. */
+  carnival: boolean
 }
 
-const TIMES: readonly TimeOfDay[] = ['dawn', 'overcast', 'afternoon', 'dusk', 'night']
+export const TIMES: readonly TimeOfDay[] = ['dawn', 'overcast', 'afternoon', 'dusk', 'night']
 // NOTE: adding 'snow' (2026-08-14) re-rolled the weather of every existing
 // tide — accepted deliberately; the notable-tides list was re-probed after.
-const WEATHERS: readonly Weather[] = ['clear', 'haze', 'rain', 'wind', 'snow']
+export const WEATHERS: readonly Weather[] = ['clear', 'haze', 'rain', 'wind', 'snow']
 
 export function deriveWorld(seed: string): World {
   const rng = mulberry32(hashSeed(seed))
@@ -176,7 +179,7 @@ export function deriveWorld(seed: string): World {
     buoyChance: range(0, 0.2),
   }
 
-  return {
+  const world: World = {
     seed,
     timeOfDay,
     weather,
@@ -188,5 +191,13 @@ export function deriveWorld(seed: string): World {
     sand: { toneShift, wetLine, grainScale, debris },
     wrack,
     audio,
+    carnival: false,
   }
+
+  // Every draw above has already been made, so overriding here cannot shift any
+  // other tide. Weather is pinned clear: rain or snow would only fight it.
+  if (isCarnival(seed)) {
+    return { ...world, weather: 'clear', paletteName: 'carnival', palette: CARNIVAL_PALETTE, carnival: true }
+  }
+  return world
 }

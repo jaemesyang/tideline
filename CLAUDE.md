@@ -32,6 +32,10 @@ changes directly, verify, and report.
 - **Auto mode** (`auto:` bottom-left) runs the tide out hands-free to the
   résumé. Opt-in and interruptible by any scroll input, so it does not
   violate the no-scroll-jacking rule — keep it that way.
+- **`6767-6767` is a hard-coded joke tide** (`lib/carnival.ts`) — rainbow
+  everything, confetti, and a crowd of Tung Tung Tung Sahur figures. It is
+  layered on after every draw, so it cannot shift any other tide; keep it that
+  way. It is not listed in the log and nothing hints at it.
 - **A `what is this?` tour explains the concept.** The spec forbade this;
   James asked for it. The button sits in the middle of the frame under the
   title, and the tour walks the controls one ring at a time (`ui/Tour.tsx`).
@@ -44,12 +48,20 @@ changes directly, verify, and report.
 Tuning is centralized: `src/tuning.ts` for JS dials, TUNING headers atop the
 shaders for GLSL ones. Prefer changing a dial over adding a new constant.
 
-Three traps that have each cost a round of rework — the README explains all
-three: the camera is orthographic (nothing shrinks or hazes with distance
-unless you do it by hand, and the water plane's far edge *is* the horizon);
-Lenis owns the scroll (native `scrollTo` and key scrolling both get stomped);
-and the light rig never touches shader output (a lit mesh next to the water
-comes out warm against cold).
+Traps that have each cost a round of rework — the README explains them all:
+the camera is orthographic (nothing shrinks or hazes with distance unless you
+do it by hand, and the water plane's far edge *is* the horizon); Lenis owns the
+scroll (native `scrollTo` and key scrolling both get stomped); the light rig
+never touches shader output (a lit mesh next to the water comes out warm
+against cold); a `transform` ancestor captures `position: fixed` descendants
+(overlays get portalled to `<body>`); and reduced motion renders on demand, so
+DOM changes that affect the scene must request a frame.
+
+Contrast is measured across all 25 palette/weather combinations, not eyeballed
+— see the floors in the README. When testing in the browser, drive the real UI:
+`page.evaluate(() => import('/src/…'))` can hand you a *second* module instance
+under Vite HMR and you will end up asserting against a store the page isn't
+using.
 
 Verify visually — this is a visual project and typechecking proves nothing
 about how it looks. `npm run dev`, then `npm run shots -- <seed> <vh...>` and

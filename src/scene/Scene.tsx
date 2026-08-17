@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { useSeed } from '../seed/useSeed'
+import { requestFrame } from '../ui/labelBridge'
 import { staticMode } from '../lib/motion'
 import { Water } from './Water'
 import { Wrack } from './Specimen'
@@ -8,6 +9,7 @@ import { Beach } from './Beach'
 import { Precipitation } from './Precipitation'
 import { Life } from './Life'
 import { Easters } from './Easters'
+import { Carnival } from './Carnival'
 
 // Orthographic three-quarter view. Shoreline runs across the lower third;
 // horizon sits near the top. Scroll drives the waterline (lib/scroll.ts).
@@ -22,16 +24,18 @@ function Rig() {
 
 // Static composition: frameloop is 'demand', so poke a few renders through —
 // one immediately, then again once fonts/layout and object placement settle.
+// The last kick has to land after the label cards have been measured, or they
+// never get positioned at all.
 function StaticKick() {
   const invalidate = useThree((s) => s.invalidate)
   const world = useSeed((s) => s.world)
   useEffect(() => {
+    requestFrame.current = invalidate
     invalidate()
-    const t1 = window.setTimeout(invalidate, 120)
-    const t2 = window.setTimeout(invalidate, 700)
+    const ts = [120, 400, 900, 1600].map((ms) => window.setTimeout(invalidate, ms))
     return () => {
-      window.clearTimeout(t1)
-      window.clearTimeout(t2)
+      ts.forEach(window.clearTimeout)
+      if (requestFrame.current === invalidate) requestFrame.current = null
     }
   }, [invalidate, world])
   return null
@@ -73,6 +77,7 @@ export function Scene() {
       <Wrack />
       <Life />
       <Easters />
+      <Carnival />
       <Precipitation />
     </Canvas>
   )

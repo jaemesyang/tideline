@@ -46,6 +46,7 @@ uniform vec4 uPoolC;
 // the rill draining the beach: x, meander phase, strength (0 = none)
 uniform vec3 uRill;
 uniform float uSnow; // snow lying on the dry beach: 0 or 1
+uniform float uCarnival; // the one seed that is not like the others: 0 or 1
 
 varying vec2 vXZ;
 varying float vCrest;
@@ -100,6 +101,12 @@ vec2 poolAt(vec2 p, vec4 c) {
   float wob = 1.0 + 0.17 * sin(a * 3.0 + c.x) + 0.11 * sin(a * 5.0 - c.y * 0.7);
   float r = length(d) / wob;
   return vec2(1.0 - smoothstep(0.55, 1.0, r), 1.0 - smoothstep(0.92, 1.45, r));
+}
+
+// Cheap cosine rainbow. Three phase-shifted cosines, so it cycles smoothly and
+// never bands — and, like everything else here, it cannot strobe.
+vec3 rainbow(float t) {
+  return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
 }
 
 float noise2(vec2 x) {
@@ -230,6 +237,15 @@ void main() {
     uSchoolOn.y * school(vec2(x, z), uSchoolB, uShoreZ, t);
   water *= 1.0 - clamp(fish, 0.0, 1.0) * 0.24 * shoalMask;
 
+  // The one seed: run the whole surface through a travelling rainbow. Sits
+  // after the depth shading so the bands still read as water, and before the
+  // foam so the surf stays white on top of it.
+  if (uCarnival > 0.5) {
+    vec3 rb = rainbow(zw * 0.055 + x * 0.02 - t * 0.09);
+    water = mix(water, rb * (0.55 + 0.45 * vCrest), 0.72);
+    water += rb * 0.12 * roll;
+  }
+
   // whitecaps: clumped, not misted — hard threshold against drifting noise
   float crestFoam = smoothstep(0.78, 0.95, vCrest * (0.55 + 0.5 * breakup)) *
     smoothstep(0.35, 0.75, fine) * uFoamDensity;
@@ -334,6 +350,13 @@ void main() {
     lying *= 0.75 + 0.25 * noise2(vec2(x * 1.6, z * 1.6)); // crust texture
     lying *= 1.0 - clamp(pool + rillDamp, 0.0, 1.0);
     sand = mix(sand, mix(uFoamColor, uSkyColor, 0.14), lying * 0.85);
+  }
+
+  if (uCarnival > 0.5) {
+    // the beach gets its own slower band, out of phase with the water
+    vec3 rbs = rainbow(z * 0.035 - x * 0.028 + t * 0.05);
+    sand = mix(sand, rbs, 0.5 + 0.22 * sin(z * 0.5 + t * 0.6));
+    sand *= 0.94 + 0.12 * noise2(vec2(x * 0.9, z * 0.9));
   }
 
   vec3 col = mix(sand, water, inWater);

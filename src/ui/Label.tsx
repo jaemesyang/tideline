@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSeed } from '../seed/useSeed'
-import { getSlot, labelSlots, layerEl } from './labelBridge'
+import { getSlot, labelSlots, layerEl, requestFrame } from './labelBridge'
 import type { WrackItem } from '../seed/deriveWorld'
+import { SpecimenLinks } from './SpecimenLinks'
 
 // Field-log labels. Position, opacity, and leader lines are written every
 // frame by the projector in scene/Specimen.tsx via labelBridge — React only
@@ -20,6 +21,7 @@ function LabelCard({ item, open, onToggle }: { item: WrackItem; open: boolean; o
       slot.w = el.offsetWidth
       slot.h = el.offsetHeight
       if (!el.classList.contains('compact')) slot.hFull = slot.h
+      requestFrame.current?.() // on-demand rendering: re-run the projector
     })
     ro.observe(el)
     return () => {
@@ -48,15 +50,7 @@ function LabelCard({ item, open, onToggle }: { item: WrackItem; open: boolean; o
       <div id={`detail-${specimen.id}`} className="label-detail">
         <div>
           <p>{specimen.detail}</p>
-          {specimen.links && specimen.links.length > 0 && (
-            <ul className="label-links">
-              {specimen.links.map((l) => (
-                <li key={l.url}>
-                  <a href={l.url}>{l.label}</a>
-                </li>
-              ))}
-            </ul>
-          )}
+          <SpecimenLinks links={specimen.links} className="label-links" />
         </div>
       </div>
     </div>
@@ -75,6 +69,12 @@ export function LabelLayer() {
       if (!ids.has(id)) labelSlots.delete(id)
     }
   }, [wrack])
+
+  // opening a card quadruples its height; the projector has to re-lay-out, and
+  // on demand-rendered frames that only happens if we ask
+  useEffect(() => {
+    requestFrame.current?.()
+  }, [openId])
 
   return (
     <div

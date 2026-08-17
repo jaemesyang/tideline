@@ -3,6 +3,7 @@
 
 /* --- fixed chrome ------------------------------------------------------- */
 
+
 .seed-tag,
 .seed-log-toggle,
 .about-toggle,
@@ -28,6 +29,20 @@
   align-items: baseline;
   gap: 14px;
   animation: chrome-in 0.6s 0.5s both;
+}
+
+/* The corner controls sit directly on the scene, and the scene is a different
+   colour on every tide. Measured across all 25 palette/weather combinations,
+   bare ink bottomed out at 1.13:1 over foam and 1.93:1 over snow-lit sand —
+   `auto:` and `sound:` were invisible on a fair number of tides. A flat paper
+   chip is in register (ruled, flat, no shadow) and holds ≥5.4:1 everywhere.
+   Legibility beats mood. One strip for the seed row, not a chip per button. */
+.seed-wrap,
+.resume-jump,
+.audio-toggle,
+.auto-toggle {
+  padding: 4px 9px 5px;
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
 }
 
 /* sits after the log toggle in the flex row — nothing to overlap */
@@ -92,7 +107,7 @@
 
 .tide-log {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   left: 0;
   min-width: 272px;
   white-space: nowrap;
@@ -394,7 +409,7 @@
   font-size: var(--text-title);
   line-height: 1.05;
   letter-spacing: 0.005em;
-  color: var(--ink);
+  color: var(--intro-ink, var(--ink));
   text-align: center;
   white-space: nowrap;
   margin: 0;
@@ -607,6 +622,14 @@
   text-underline-offset: 3px;
 }
 
+/* a link whose URL is still a placeholder in content.ts: reads as the label it
+   will become, but is not a live anchor that would 404 */
+.link-pending {
+  color: var(--ink-dim);
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
 /* --- deepest point: the résumé block ------------------------------------ */
 
 .resume-block {
@@ -748,13 +771,21 @@
   white-space: nowrap;
 }
 
+/* The one seed: the scene behind the title is every colour at once, so the
+   name takes the same paper chip the chrome does. See lib/carnival.ts. */
+:root[data-carnival] .intro-line {
+  padding: 4px 26px 10px;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  color: var(--ink);
+}
+
 /* --- static composition (prefers-reduced-motion) ------------------------ */
 
 /* static composition: the beach is already exposed, so the title sits over
    the water band at the top rather than dead-centre across the wrack */
 .intro-static {
   position: absolute;
-  top: 19%;
+  top: 15%; /* the water band above the surf — 19% put the button on the foam */
   animation: none;
 }
 

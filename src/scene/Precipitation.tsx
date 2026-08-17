@@ -22,7 +22,7 @@ void main() {
 
 const frag = /* glsl */ `
 uniform float uTime;
-uniform float uMode; // 0 = none, 1 = rain, 2 = snow
+uniform float uMode; // 0 = none, 1 = rain, 2 = snow, 3 = the one seed
 uniform vec3 uColor;
 uniform float uAspect;
 uniform float uCover; // cloud coverage 0..1
@@ -66,6 +66,23 @@ float rainL(vec2 uv, float t, float n, float speed, float slant, float alpha) {
   return step(0.75, h) * streak * alpha;
 }
 
+// Rainbow confetti: spinning rectangles, one colour per cell. Returns its own
+// colour rather than tinting uColor, because the whole point is that no two
+// flakes match.
+vec4 confettiL(vec2 uv, float t, float n, float speed, float alpha) {
+  uv.y += t * speed;
+  uv.x += sin(t * 0.7 + uv.y * 3.0) * 0.05;
+  vec2 id = floor(uv * n);
+  vec2 f = fract(uv * n) - 0.5;
+  float h = hash21(id);
+  if (h < 0.70) return vec4(0.0);
+  float a = t * (2.0 + fract(h * 7.0) * 7.0) + h * 30.0;
+  vec2 r = vec2(f.x * cos(a) - f.y * sin(a), f.x * sin(a) + f.y * cos(a));
+  float m = step(abs(r.x), 0.17) * step(abs(r.y), 0.075);
+  vec3 col = 0.5 + 0.5 * cos(6.28318 * (h * 3.0 + vec3(0.0, 0.33, 0.67)));
+  return vec4(col, m * alpha);
+}
+
 float snowL(vec2 uv, float t, float n, float speed, float drift, float r, float alpha) {
   uv.y += t * speed;
   uv.x += sin(t * 0.5 + uv.y * 4.0) * drift;
@@ -105,22 +122,32 @@ void main() {
   }
 
   float a = 0.0;
+  vec3 aCol = uColor;
   if (uMode > 0.5 && uMode < 1.5) {
     a += rainL(uv, t, 15.0, 1.3, 0.12, 0.30);
     a += rainL(uv, t, 23.0, 1.0, 0.09, 0.22);
     a += rainL(uv, t, 33.0, 0.75, 0.14, 0.14);
-  } else if (uMode >= 1.5) {
+  } else if (uMode < 2.5) {
     a += snowL(uv, t, 9.0, 0.05, 0.020, 0.20, 0.55);
     a += snowL(uv, t, 15.0, 0.075, 0.030, 0.16, 0.42);
     a += snowL(uv, t, 23.0, 0.105, 0.040, 0.13, 0.30);
+  } else if (uMode >= 2.5) {
+    vec4 c1 = confettiL(uv, t, 11.0, 0.11, 0.95);
+    vec4 c2 = confettiL(uv + 3.7, t, 17.0, 0.16, 0.8);
+    vec4 c3 = confettiL(uv + 8.1, t, 25.0, 0.22, 0.62);
+    a = c1.a + c2.a * (1.0 - c1.a);
+    aCol = a > 0.001 ? (c1.rgb * c1.a + c2.rgb * c2.a * (1.0 - c1.a)) / a : uColor;
+    float a3 = c3.a * (1.0 - a);
+    aCol = a + a3 > 0.001 ? (aCol * a + c3.rgb * a3) / (a + a3) : aCol;
+    a = a + a3;
   }
-  a = clamp(a, 0.0, 0.85);
+  a = clamp(a, 0.0, 0.9);
 
   // headland under the clouds, precip over both
   float baseA = la + ca * (1.0 - la);
   vec3 baseCol = baseA > 0.001 ? (uLandCol * la + uCloudCol * ca * (1.0 - la)) / baseA : uCloudCol;
   float outA = a + baseA * (1.0 - a);
-  vec3 outCol = outA > 0.001 ? (uColor * a + baseCol * baseA * (1.0 - a)) / outA : uColor;
+  vec3 outCol = outA > 0.001 ? (aCol * a + baseCol * baseA * (1.0 - a)) / outA : aCol;
 
   // shooting star: one streak every ~40s, drawn above the horizon only
   if (uStar > 0.5) {
@@ -167,7 +194,7 @@ export function Precipitation() {
   const mesh = useRef<Mesh>(null)
   const mat = useRef<ShaderMaterial>(null)
 
-  const mode = world.weather === 'rain' ? 1 : world.weather === 'snow' ? 2 : 0
+  const mode = world.carnival ? 3 : world.weather === 'rain' ? 1 : world.weather === 'snow' ? 2 : 0
   const star = useMemo(() => deriveEasters(world).shootingStar, [world])
 
   // Some coasts have another headland in sight. Decorative stream — a new tag,

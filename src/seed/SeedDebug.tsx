@@ -3,10 +3,10 @@
 // same seed in two browsers — hash must match character for character.
 
 import { useSeed } from './useSeed'
-import { PALETTES, applyWeather, type TimeOfDay, type Weather, type Palette } from '../lib/palettes'
-
-const TIMES: TimeOfDay[] = ['dawn', 'overcast', 'afternoon', 'dusk', 'night']
-const WEATHERS: Weather[] = ['clear', 'haze', 'rain', 'wind']
+import { PALETTES, applyWeather, type Palette } from '../lib/palettes'
+// The authoritative lists, not a second copy: this file kept its own and quietly
+// went stale when `snow` was added, so the debug page never showed it.
+import { TIMES, WEATHERS } from './deriveWorld'
 
 function fnv(s: string): string {
   let h = 0x811c9dc5

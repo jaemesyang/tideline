@@ -145,6 +145,7 @@ export function Water() {
       uPoolC: { value: beach.pools[2] },
       uRill: { value: beach.rill },
       uSnow: { value: world.weather === 'snow' ? 1 : 0 },
+      uCarnival: { value: world.carnival ? 1 : 0 },
     }
   }, [world, schools, beach])
 

@@ -37,8 +37,15 @@ function fadeOutAndTeardown() {
   }, FADE_OUT * 1000 + 120)
 }
 
-export async function start(world: World) {
+/**
+ * `cancelled` is checked after the two awaits that can outlast the click that
+ * asked for sound. Without it, muting during the Tone.js load or the context
+ * resume still built the whole graph and only tore it down afterwards.
+ */
+export async function start(world: World, cancelled: () => boolean = () => false) {
+  if (cancelled()) return
   await Tone.start()
+  if (cancelled()) return
   fadeOutAndTeardown()
 
   const rng = mulberry32(hashSeed(world.seed) ^ 0x5eabed)
@@ -142,6 +149,37 @@ export async function start(world: World) {
     patterFilter.connect(patterGain)
     patterGain.connect(voicing)
     graphNodes.push(patter, patterFilter, patterGain)
+  }
+
+  // The one seed keeps time: three knocks, a beat, two more, and round again.
+  // A wooden thud under the same lofi voicing as everything else.
+  if (world.carnival) {
+    const drum = new Tone.MembraneSynth({
+      pitchDecay: 0.028,
+      octaves: 2,
+      envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.1 },
+    })
+    const drumGain = new Tone.Gain(TUNING.carnival.drumLevel)
+    drum.connect(drumGain)
+    drumGain.connect(voicing)
+    // tung — tung — tung — · — sa — hur
+    const BAR: [number, number][] = [
+      [0, 184],
+      [0.26, 184],
+      [0.52, 184],
+      [0.94, 138],
+      [1.18, 110],
+    ]
+    // Schedule the whole bar at explicit, strictly increasing audio times. One
+    // setTimeout per hit let two coalesce into the same instant, and Tone
+    // rejects a retrigger that is not strictly later than the last one.
+    const bar = () => {
+      const t0 = Tone.now() + 0.06
+      for (const [at, hz] of BAR) drum.triggerAttackRelease(hz, 0.11, t0 + at)
+      later(bar, 1.86)
+    }
+    bar()
+    graphNodes.push(drum, drumGain)
   }
 
   // gull: a soft falling cry, sometimes doubled — never in snow

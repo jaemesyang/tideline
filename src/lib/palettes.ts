@@ -106,6 +106,42 @@ export function perturbPalette(p: Palette, hueShift: number, lightShift: number)
   return out
 }
 
+/** WCAG relative luminance. */
+function luminance(hex: string): number {
+  const n = parseInt(hex.slice(1), 16)
+  const f = (v: number) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * f((n >> 16) & 255) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255)
+}
+
+/** WCAG contrast ratio, 1..21. */
+export function contrast(a: string, b: string): number {
+  const la = luminance(a)
+  const lb = luminance(b)
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+}
+
+/**
+ * Walk `fg` along lightness — away from `bg`, keeping its hue — until it clears
+ * `min` contrast. For the handful of places where text sits directly on the
+ * scene and the scene is a different colour on every tide. Returns `fg`
+ * unchanged when it already clears, so most tides are untouched.
+ */
+export function readableOn(fg: string, bg: string, min: number): string {
+  if (contrast(fg, bg) >= min) return fg
+  const c = hexToHsl(fg)
+  const dir = luminance(fg) >= luminance(bg) ? 1 : -1
+  let best = fg
+  for (let i = 1; i <= 20; i++) {
+    const cand = hslToHex({ h: c.h, s: c.s, l: c.l + dir * i * 0.05 })
+    best = cand
+    if (contrast(cand, bg) >= min) break
+  }
+  return best
+}
+
 /** Linear RGB-space blend of two hex colors. */
 export function mixHex(a: string, b: string, t: number): string {
   const na = parseInt(a.slice(1), 16)

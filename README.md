@@ -34,6 +34,16 @@ the résumé; any wheel, touch, or key input hands control straight back and
 switches it off — it is never a scroll-jack. Pace lives in `tuning.ts` →
 `scroll.autoSeconds`.
 
+**One seed is not like the others.** `6767-6767` is hard-coded
+(`lib/carnival.ts`): rainbow water and sand, confetti instead of weather, a
+crowd of wooden things with faces marching along the strandline
+(`scene/Carnival.tsx`), and a drum keeping time under the surf. It is applied
+*after* every `deriveWorld` draw has been made, so no other tide moves by a
+hair — verified against 12,960 ordinary seeds. Everything that has to stay
+readable stays readable: ink and paper are hand-authored boring, and the title
+takes a paper chip (`:root[data-carnival]`) because no single ink survives a
+backdrop cycling through every hue. Dials in `tuning.ts` → `carnival`.
+
 **Hidden things.** Each tide independently rolls a set of easter eggs
 (`lib/easters.ts`, rates in `tuning.ts` → `easters`), spanning a crab on about
 a third of tides down to a rubber duck on roughly one in forty. Add a new one
@@ -63,6 +73,7 @@ every existing tide's eggs untouched; inserting mid-list re-rolls them all.
 | `src/lib/palettes.ts` | the five hand-authored palettes + weather deltas |
 | `src/scene/` | `Water` (shader host + fish schools + tide pools/rill/sun-lane uniforms), `Beach` (lights, debris, strand line, gulls), `Specimen` (objects, emergence, snow dusting, label projector), `Life` (sandpipers, sail, jumping fish, icebergs), `Easters` (the hidden things), `Precipitation` (clouds, rain, snow, shooting star, distant headland), `objects.tsx` (the 10 object builders) |
 | `src/lib/easters.ts` | which hidden things a given tide carries |
+| `src/lib/carnival.ts` | the one seed, and the palette it forces |
 | `src/lib/surf.ts` | live swash state, written by the water and read by the audio |
 | `src/lib/lightRig.ts` | the per-time-of-day sun: lights *and* the water's reflected lane |
 | `src/ui/` | labels, seed tag, kept tides, the tour, résumé block, end choice, audio toggle, auto mode |
@@ -106,7 +117,7 @@ Existing tags: fish schools `0xf15f`, sandpipers `0x51de`, sail `0x5a1e`,
 strands `0x57a4`, clouds `0xc10d`, gulls `0x9e3d`, audio events `0x5eabed`,
 jumping fish `0x1a5b`, icebergs `0x1ce8`, easter-egg roll `0xea57`, crab
 `0xc4ab`, footprints `0xf007`, whale `0x3ba1`, duck `0xd0c5`, tide pools + rill
-`0xbeac`, headland `0x1a4d`. Pick a new tag, never reuse one.
+`0xbeac`, headland `0x1a4d`, the carnival crowd `0x5a40`. Pick a new tag, never reuse one.
 
 **No `Math.random()`** anywhere, tooling included (lint enforces it in `src/`).
 
@@ -129,7 +140,7 @@ laid out before all the others so they move around it instead of over it.
 `TOP_KEEPOUT`/`BOTTOM_KEEPOUT` reserve the chrome rows.
 
 **Budgets.** 60fps desktop / 30fps mobile floor, initial JS under 400 kB
-gzipped (currently ~325 kB; Tone.js is a lazy chunk that loads on unmute).
+gzipped (currently ~328 kB; Tone.js is a lazy chunk that loads on unmute).
 Check with `npm run build` and the fps readout in any screenshot session.
 
 **Lenis owns the scroll.** It smooths wheel and touch but never sees the
@@ -145,8 +156,29 @@ private audio timer — `world.audio.swellPeriod` is a different draw from
 `world.water.swash`, and running the sound off it desynchronised the two.
 
 **Legibility.** The résumé is the point. Never obscure label or résumé text
-with an effect; label paper/ink contrast is hand-authored per palette
-(`paper` role in `palettes.ts`, keep ≥ 4.5:1 after perturbation).
+with an effect. Contrast is *measured*, not assumed — sweep all 25
+palette/weather combinations at the perturbation extremes before shipping a
+palette change. Current floors: label/tour/log ink on paper 6.96:1, dim ink
+4.71:1, corner chrome 5.14:1, title 3.28:1 (large type, 3:1 bar).
+
+Two rules fall out of that sweep. **Anything sitting directly on the scene
+needs a backing**: bare ink bottomed out at 1.13:1 over foam, so the four
+corner controls carry a flat 86%-paper chip. And **the title uses
+`--intro-ink`**, not `--ink`: `readableOn()` in `palettes.ts` walks it off the
+water only on the tides where it needs it, so most palettes are untouched.
+
+**Links must not navigate the tab.** A tide's seed is never in the URL, so
+leaving the page destroys the beach the visitor was on and no back button
+returns it. `ui/SpecimenLinks.tsx` renders every specimen link: http(s) opens
+in a new tab with `rel="noopener noreferrer"`, `mailto:` stays put, and a
+`TODO_` placeholder renders as inert text rather than an href that 404s.
+
+**Reduced motion is a real mode, not a fallback.** It renders the same scene
+still, with the same labels — the objects are the navigation, and dropping the
+labels there once left the accessible mode with no navigation at all. The
+canvas runs `frameloop="demand"`, so anything that changes label layout must
+call `requestFrame.current?.()` (`ui/labelBridge.ts`) or the projector never
+runs again.
 
 ## Common edits
 

@@ -60,6 +60,14 @@ export const TUNING = {
     icebergs: { min: 3, extra: 4 },
   },
 
+  /** The one seed (lib/carnival.ts). Nothing here touches any other tide. */
+  carnival: {
+    /** How many of them are on the beach. */
+    crowd: 34,
+    /** Level of the tung-tung-tung drum in the mix. */
+    drumLevel: 0.075,
+  },
+
   /** Hidden things. Each is an independent per-tide chance, 0..1.
    *  Some are meant to be common enough to notice, some to be talked about. */
   easters: {

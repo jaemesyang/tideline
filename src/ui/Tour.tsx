@@ -225,6 +225,12 @@ export function Tour({ onClose }: { onClose: () => void }) {
             {last ? 'done' : 'next →'}
           </button>
         </div>
+        {i === 0 && (
+          <p className="tour-colophon">
+            React Three Fiber, with a hand-written GLSL shoreline. Every random value comes from one
+            seeded generator; nothing here calls Math.random.
+          </p>
+        )}
         {!staticMode && (
           <div className="tour-clock" aria-hidden>
             <div

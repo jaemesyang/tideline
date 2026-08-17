@@ -1,5 +1,6 @@
 import { useSeed } from '../seed/useSeed'
 import { specimens } from '../content'
+import { SpecimenLinks } from './SpecimenLinks'
 
 // The deepest point (§6): tide fully out, everything exposed. The complete
 // résumé in the tide's catalogue order, no interaction needed to read any of
@@ -34,15 +35,7 @@ export function ResumeBlock() {
             <h2>{specimen.title}</h2>
             <p className="resume-summary">{specimen.summary}</p>
             <p className="resume-detail">{specimen.detail}</p>
-            {specimen.links && specimen.links.length > 0 && (
-              <ul className="resume-links">
-                {specimen.links.map((l) => (
-                  <li key={l.url}>
-                    <a href={l.url}>{l.label}</a>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <SpecimenLinks links={specimen.links} className="resume-links" />
           </div>
         </article>
       ))}

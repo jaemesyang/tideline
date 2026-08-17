@@ -31,3 +31,11 @@ export const introEl: { current: HTMLElement | null } = { current: null }
 
 /** Whole label layer — fades out as the résumé block scrolls in over the beach. */
 export const layerEl: { current: HTMLElement | null } = { current: null }
+
+/**
+ * Ask the canvas for one more frame. The static composition (reduced motion)
+ * renders on demand, so anything that changes label layout — opening a card,
+ * a card being measured, a resize — has to request a frame or the projector
+ * never runs again and the cards stay where they were.
+ */
+export const requestFrame: { current: (() => void) | null } = { current: null }

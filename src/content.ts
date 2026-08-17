@@ -29,7 +29,7 @@ export const specimens: Specimen[] = [
     object: 'shell',
     year: '—',
     summary: 'Sophomore at Lakeside School in Seattle.',
-    detail: "Still figuring out what I'm going to be good at. These are the attempts.",
+    detail: "Hi! My name's James and welcome to my personal website, to be honest I was just really bored one week and decided to make this, I hope you enjoy. I wanted the website to be unique and different than other personal websites I've seen, so I decided to add some creative twists, such as the website never being the same each time you reload it. Most of the projects you see on the beach are a compilation of me figuring out what I want to do.",
   },
   {
     id: 'scrapped',
